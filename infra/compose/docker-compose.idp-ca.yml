@@ -1,0 +1,19 @@
+# Overlay for a control plane that reaches Pocket ID through a private CA.
+#
+# Some private deployments serve Pocket ID with a self-signed certificate
+# (passkeys need an HTTPS origin), so the api container must trust that CA.
+# Point IDP_CA_CERT at the Pocket ID CA and compose both files:
+#
+#   cp /path/to/ca.crt infra/compose/idp-ca.crt
+#   IDP_CA_CERT=./idp-ca.crt docker compose \
+#     -f infra/compose/docker-compose.yml \
+#     -f infra/compose/docker-compose.idp-ca.yml up -d
+services:
+  api:
+    environment:
+      NODE_EXTRA_CA_CERTS: /etc/intentra/idp-ca.crt
+    volumes:
+      - "${IDP_CA_CERT:?set IDP_CA_CERT to the Pocket ID CA certificate}:/etc/intentra/idp-ca.crt:ro"
+    # Pin the IdP hostname to its address when the container's resolver cannot resolve it.
+    extra_hosts:
+      - "${IDP_HOST:?set IDP_HOST to the Pocket ID hostname}:${IDP_HOST_IP:?set IDP_HOST_IP to the Pocket ID address}"

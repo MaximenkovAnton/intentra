@@ -1,0 +1,9 @@
+{
+  "type": "job.offer",
+  "jobId": "00000000-0000-4000-8000-000000000000",
+  "intentId": "00000000-0000-4000-8000-000000000001",
+  "stage": "build",
+  "runtime": "dsh",
+  "payload": { "task": "add-thing" },
+  "leaseUntil": "2026-11-26T10:00:00.000Z"
+}

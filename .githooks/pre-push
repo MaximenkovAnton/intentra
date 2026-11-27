@@ -1,0 +1,42 @@
+#!/bin/sh
+# Intentra push policy.
+#
+# Feature branches publish freely. `main`/`master` never take a direct push:
+# open a pull request and let a human merge it. Ephemeral worktree branches
+# (`intentra/*`, `*--bt-*`) are local scaffolding and are not published.
+#
+# A deliberate, human-approved bootstrap or release may publish main once:
+#   INTENTRA_PUBLISH_MAIN=1 git push github main
+set -eu
+
+url="${2:-}"
+case "$url" in
+  *github.com*) ;;
+  *) exit 0 ;;
+esac
+
+allow_main="${INTENTRA_PUBLISH_MAIN:-0}"
+blocked=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main | refs/heads/master)
+      if [ "$allow_main" = "1" ]; then
+        echo "intentra: publishing $remote_ref because INTENTRA_PUBLISH_MAIN=1" >&2
+      else
+        echo "intentra: direct push to $remote_ref is blocked; open a PR and let a human merge it" >&2
+        blocked=1
+      fi
+      ;;
+    refs/heads/intentra/* | refs/heads/*--bt-*)
+      echo "intentra: $remote_ref is an ephemeral worktree branch and is not published" >&2
+      blocked=1
+      ;;
+    refs/heads/archive/*)
+      echo "intentra: $remote_ref is a local archive branch and is not published" >&2
+      blocked=1
+      ;;
+  esac
+done
+
+exit "$blocked"

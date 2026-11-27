@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`memory API > builds a deterministic context pack within the byte budget 1`] = `
+"# Intent
+Memory core (clarifying)
+Store knowledge in FalkorDB and Qdrant with a deterministic context pack
+
+# AC
+- AC-1: The context pack never exceeds 3072 bytes
+
+# Decisions
+- eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee: Qdrant — Hybrid search support
+
+# Claims
+- 555be6b7-4759-565c-b9e2-141d6c0afb0b: The embedding cache is keyed by content sha256 (probe: test test/memory.test.ts)
+
+# Capabilities
+- Memory: graph + vectors
+
+# Episodes
+- Accepted memory core
+
+# Traps
+- Qdrant payloads never carry source code
+"
+`;

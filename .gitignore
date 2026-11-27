@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+target/
+.intentra/
+.agile/
+.env
+.env.*
+!.env.example
+# Local IdP certificates and CA (generated on the IdP host, never committed):
+infra/idp/certs/
+infra/compose/idp-ca.crt
+*.log
+.DS_Store
+playwright-report/
+test-results/
+
+# Environment-specific operations live locally and are never published:
+# host provisioning, Proxmox/CT scripts, internal IPs and container IDs.
+infra/local/
+infra/proxmox/

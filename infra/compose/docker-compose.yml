@@ -1,0 +1,100 @@
+# Intentra control plane: one-shot migrations, API and web behind a single origin.
+#
+# Copy .env.example to .env in this directory and fill it in before running
+# `docker compose up`. Compose interpolates every value below from that .env file
+# (the project directory is this directory); nothing secret is committed.
+#
+# Postgres, Pocket ID and the memory services are not part of this compose file —
+# they run elsewhere and are reached through DATABASE_URL / OIDC_ISSUER / *URL.
+
+name: intentra
+
+services:
+  # One-shot migration job: runs `pnpm --filter @intentra/api db:migrate` and exits.
+  migrate:
+    build:
+      context: ../..
+      dockerfile: infra/compose/Dockerfile.api
+    image: intentra-api:${INTENTRA_IMAGE_TAG:-local}
+    command: ["pnpm", "--filter", "@intentra/api", "db:migrate"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "${DATABASE_URL:-}"
+    restart: "no"
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/compose/Dockerfile.api
+    image: intentra-api:${INTENTRA_IMAGE_TAG:-local}
+    environment:
+      # development is the dev slice (plain-HTTP origin); production requires
+      # TLS on PUBLIC_URL and an https OIDC issuer.
+      NODE_ENV: "${NODE_ENV:-production}"
+      PORT: "8080"
+      DATABASE_URL: "${DATABASE_URL:-}"
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+      PUBLIC_URL: "${PUBLIC_URL:-}"
+      OIDC_ISSUER: "${OIDC_ISSUER:-}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-}"
+      OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
+      OIDC_REDIRECT_URI: "${OIDC_REDIRECT_URI:-}"
+      OIDC_ADMIN_GROUP: "${OIDC_ADMIN_GROUP:-}"
+      AUTH_MODE: "${AUTH_MODE:-oidc}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      FALKORDB_URL: "${FALKORDB_URL:-redis://localhost:6379}"
+      QDRANT_URL: "${QDRANT_URL:-http://localhost:6333}"
+      OLLAMA_URL: "${OLLAMA_URL:-http://localhost:11434}"
+      MEMORY_EMBEDDING_MODEL: "${MEMORY_EMBEDDING_MODEL:-bge-m3}"
+      MEMORY_INTERNAL_TOKEN: "${MEMORY_INTERNAL_TOKEN:-}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:8080/healthz')
+          .then((res) => process.exit(res.ok ? 0 : 1))
+          .catch(() => process.exit(1));
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/compose/Dockerfile.web
+    image: intentra-web:${INTENTRA_IMAGE_TAG:-local}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Single origin: the host reaches the SPA and /api through this port only.
+      - "${WEB_PORT:-8090}:8080"
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

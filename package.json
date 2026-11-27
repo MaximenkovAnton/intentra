@@ -1,0 +1,27 @@
+{
+  "name": "intentra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.28.5",
+  "scripts": {
+    "dev": "pnpm --filter @intentra/contracts build && pnpm --parallel --filter @intentra/contracts --filter @intentra/api --filter @intentra/web dev",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm --filter @intentra/contracts build && pnpm -r --if-present typecheck",
+    "test": "pnpm --filter @intentra/contracts build && pnpm -r --if-present test",
+    "lint": "eslint .",
+    "db:generate": "pnpm --filter @intentra/api db:generate",
+    "db:migrate": "pnpm --filter @intentra/api db:migrate",
+    "openapi": "pnpm --filter @intentra/contracts openapi",
+    "e2e": "pnpm --filter @intentra/web e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.74.0"
+  }
+}

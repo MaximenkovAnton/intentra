@@ -1,0 +1,22 @@
+[package]
+name = "intentra-runner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "intentra-runner"
+path = "src/main.rs"
+
+[dependencies]
+intentra-runner-core.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio.workspace = true

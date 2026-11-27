@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - '@types/react@19.3.3'
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  esbuild: true

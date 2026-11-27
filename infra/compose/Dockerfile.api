@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+
+# ---------- build ----------
+# Installs the pnpm workspace, compiles the contracts package, then the API.
+FROM node:24-alpine AS build
+
+RUN npm install --global pnpm@11.28.5
+WORKDIR /repo
+
+# Manifests first so the dependency layer is cached independently of the sources.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/contracts/package.json packages/contracts/
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/contracts ./packages/contracts
+COPY apps/api ./apps/api
+
+RUN pnpm --filter @intentra/contracts build \
+ && pnpm --filter @intentra/api build
+
+# ---------- runtime ----------
+# Node 24, non-root. The workspace node_modules are copied as installed so that
+# the API metadata/source needed by the `db:migrate` script (tsx) is available.
+FROM node:24-alpine AS runtime
+
+ENV NODE_ENV=production \
+    PORT=8080 \
+    HOME=/tmp
+
+RUN npm install --global pnpm@11.28.5 \
+ && addgroup -S -g 10001 intentra \
+ && adduser -S -D -H -u 10001 -G intentra intentra
+
+WORKDIR /repo
+COPY --from=build --chown=intentra:intentra /repo/package.json /repo/pnpm-workspace.yaml /repo/pnpm-lock.yaml ./
+COPY --from=build --chown=intentra:intentra /repo/node_modules ./node_modules
+COPY --from=build --chown=intentra:intentra /repo/packages/contracts ./packages/contracts
+COPY --from=build --chown=intentra:intentra /repo/apps/api ./apps/api
+
+USER intentra
+EXPOSE 8080
+CMD ["node", "apps/api/dist/server.js"]

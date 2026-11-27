@@ -1,0 +1,9 @@
+{
+  "type": "hello",
+  "protocolVersion": 1,
+  "runnerVersion": "0.1.0",
+  "os": "linux",
+  "arch": "x86_64",
+  "adapters": [{ "id": "dsh", "label": "DSH" }],
+  "workspaces": ["/home/intentra/code"]
+}

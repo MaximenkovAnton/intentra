@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+
+jobs:
+  node:
+    name: Node · typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      # Integration tests run only when TEST_DATABASE_URL is set; tests skip otherwise.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: intentra
+          POSTGRES_PASSWORD: intentra
+          POSTGRES_DB: intentra_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U intentra -d intentra_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://intentra:intentra@localhost:5432/intentra_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -w typecheck
+
+      - name: Lint
+        run: pnpm -w lint
+
+      - name: Test
+        run: pnpm -w test
+
+      - name: Build
+        run: pnpm -w build
+
+  rust:
+    name: Rust · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Release binaries
+        run: cargo build --release --workspace
