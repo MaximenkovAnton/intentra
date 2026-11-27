@@ -507,6 +507,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_workspace_with_untracked_files_is_accepted() {
+        let (dir, jobs) = manager(2).await;
+        std::fs::write(dir.path().join("scratch.txt"), "notes\n").unwrap();
+        let accepted = jobs
+            .accept(&offer(
+                "job-1",
+                "mock",
+                json!({"projectKey": "p"}),
+                &lease(),
+            ))
+            .unwrap();
+        assert_eq!(accepted.repo.root, dir.path().canonicalize().unwrap());
+    }
+
+    #[tokio::test]
     async fn a_workspace_outside_the_allowlist_is_declined() {
         let (_dir, jobs) = manager(2).await;
         let outside = tempfile::tempdir().unwrap();
