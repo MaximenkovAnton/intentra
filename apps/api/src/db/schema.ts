@@ -13,6 +13,7 @@ import {
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import type {
+  Channel,
   ClaimStatus,
   DecisionStatus,
   EscalationOption,
@@ -28,6 +29,7 @@ import type {
   SpecStatus,
   StageKind,
   StageStatus,
+  UpdateStatus,
   VerdictDecision,
 } from '@intentra/contracts';
 
@@ -131,11 +133,46 @@ export const runners = pgTable(
     status: text('status').$type<RunnerStatus>().notNull().default('offline'),
     lastSeenAt: at('last_seen_at'),
     revokedAt: at('revoked_at'),
+    pinnedVersion: text('pinned_version'),
+    autoUpdate: boolean('auto_update').notNull().default(true),
   },
   (table) => [
     uniqueIndex('runners_token_hash_uq').on(table.tokenHash),
     index('runners_owner_idx').on(table.ownerUserId),
   ],
+);
+
+export const releases = pgTable(
+  'releases',
+  {
+    version: text('version').primaryKey(),
+    channel: text('channel').$type<Channel>().notNull(),
+    protocolVersion: integer('protocol_version').notNull(),
+    manifest: text('manifest').notNull(),
+    signature: text('signature').notNull(),
+    notes: text('notes').notNull().default(''),
+    publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }).notNull(),
+    yanked: boolean('yanked').notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [index('releases_channel_protocol_idx').on(table.channel, table.protocolVersion, table.yanked)],
+);
+
+export const runnerUpdateEvents = pgTable(
+  'runner_update_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    runnerId: uuid('runner_id')
+      .notNull()
+      .references(() => runners.id, { onDelete: 'cascade' }),
+    fromVersion: text('from_version').notNull(),
+    toVersion: text('to_version').notNull(),
+    status: text('status').$type<UpdateStatus>().notNull(),
+    reason: text('reason'),
+    createdAt: createdAt(),
+  },
+  (table) => [index('runner_update_events_runner_created_idx').on(table.runnerId, table.createdAt)],
 );
 
 export const runnerRegistrationTokens = pgTable(
@@ -494,6 +531,8 @@ export type SessionRow = typeof sessions.$inferSelect;
 export type ProjectRow = typeof projects.$inferSelect;
 export type ProjectMemberRow = typeof projectMembers.$inferSelect;
 export type RunnerRow = typeof runners.$inferSelect;
+export type ReleaseRow = typeof releases.$inferSelect;
+export type RunnerUpdateEventRow = typeof runnerUpdateEvents.$inferSelect;
 export type IntentRow = typeof intents.$inferSelect;
 export type IntentMessageRow = typeof intentMessages.$inferSelect;
 export type SpecRow = typeof specs.$inferSelect;

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, ProjectKeySchema } from './common.js';
+import { RunnerLastUpdateSchema, SemVerSchema } from './release.js';
 
 export const RunnerStatusSchema = z.enum(['online', 'offline', 'revoked']);
 export type RunnerStatus = z.infer<typeof RunnerStatusSchema>;
@@ -15,6 +16,11 @@ export const RunnerSchema = z.object({
   status: RunnerStatusSchema,
   lastSeenAt: IsoDateSchema.nullable(),
   revokedAt: IsoDateSchema.nullable(),
+  pinnedVersion: SemVerSchema.nullable(),
+  autoUpdate: z.boolean(),
+  latestVersion: SemVerSchema.nullable(),
+  updateAvailable: z.boolean(),
+  lastUpdate: RunnerLastUpdateSchema.nullable(),
 });
 export type Runner = z.infer<typeof RunnerSchema>;
 

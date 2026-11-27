@@ -9,6 +9,8 @@ export const ErrorCodeSchema = z.enum([
   'LIMIT',
   'RUNNER_OFFLINE',
   'ESCALATION_EXPIRED',
+  'UPSTREAM_FAILED',
+  'RELEASE_DISABLED',
   'INTERNAL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
@@ -29,5 +31,7 @@ export const ERROR_HTTP_STATUS = {
   LIMIT: 429,
   RUNNER_OFFLINE: 503,
   ESCALATION_EXPIRED: 410,
+  UPSTREAM_FAILED: 502,
+  RELEASE_DISABLED: 503,
   INTERNAL: 500,
 } as const satisfies Record<ErrorCode, number>;

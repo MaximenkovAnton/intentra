@@ -10,6 +10,7 @@ import type {
   Project,
   Requirement,
   Runner,
+  RunnerLastUpdate,
   Spec,
   Stage,
   Verdict,
@@ -27,6 +28,7 @@ import type {
   ProjectRow,
   RequirementRow,
   RunnerRow,
+  RunnerUpdateEventRow,
   SpecRow,
   StageRow,
   UserRow,
@@ -60,7 +62,23 @@ export function toMemberDto(member: ProjectMemberRow, user: UserRow): Member {
   };
 }
 
-export function toRunnerDto(runner: RunnerRow): Runner {
+export interface RunnerUpdateView {
+  readonly latestVersion: string | null;
+  readonly updateAvailable: boolean;
+  readonly lastUpdate: RunnerUpdateEventRow | null;
+}
+
+export function toRunnerDto(runner: RunnerRow, view: RunnerUpdateView): Runner {
+  const lastUpdate: RunnerLastUpdate | null =
+    view.lastUpdate === null
+      ? null
+      : {
+          fromVersion: view.lastUpdate.fromVersion,
+          toVersion: view.lastUpdate.toVersion,
+          status: view.lastUpdate.status,
+          reason: view.lastUpdate.reason,
+          createdAt: iso(view.lastUpdate.createdAt),
+        };
   return {
     id: runner.id,
     name: runner.name,
@@ -72,6 +90,11 @@ export function toRunnerDto(runner: RunnerRow): Runner {
     status: runner.status,
     lastSeenAt: isoOrNull(runner.lastSeenAt),
     revokedAt: isoOrNull(runner.revokedAt),
+    pinnedVersion: runner.pinnedVersion,
+    autoUpdate: runner.autoUpdate,
+    latestVersion: view.latestVersion,
+    updateAvailable: view.updateAvailable,
+    lastUpdate,
   };
 }
 

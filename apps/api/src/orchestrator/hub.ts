@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
@@ -9,7 +9,7 @@ import {
   type RunnerToCenterMessage,
 } from '@intentra/contracts';
 import type { AppDeps } from '../deps.js';
-import { hashToken } from '../auth/session.js';
+import { findRunnerByToken, tokenFrom } from '../auth/runner-token.js';
 import { projectRunners, runners } from '../db/schema.js';
 import { requeueRunnerJobs } from './jobs.js';
 
@@ -52,17 +52,6 @@ interface Connection {
   hello: boolean;
   queue: Promise<void>;
 }
-
-const tokenFrom = (request: IncomingMessage): string | null => {
-  const authorization = request.headers.authorization;
-  if (authorization !== undefined) {
-    const [scheme, value] = authorization.split(' ');
-    if (scheme?.toLowerCase() === 'bearer' && value !== undefined && value.length > 0) return value;
-  }
-  const url = new URL(request.url ?? '/', 'http://runner.invalid');
-  const fromQuery = url.searchParams.get('token');
-  return fromQuery !== null && fromQuery.length > 0 ? fromQuery : null;
-};
 
 const reject = (socket: Duplex, status: number, message: string): void => {
   socket.write(`HTTP/1.1 ${status} ${message}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
@@ -232,11 +221,7 @@ export function createRunnerHub(deps: AppDeps): RunnerHub {
       return;
     }
     void (async () => {
-      const [runner] = await deps.db
-        .select()
-        .from(runners)
-        .where(and(eq(runners.tokenHash, hashToken(token)), isNull(runners.revokedAt)))
-        .limit(1);
+      const runner = await findRunnerByToken(deps.db, token);
       if (!runner) {
         reject(socket, 401, 'Unauthorized');
         return;

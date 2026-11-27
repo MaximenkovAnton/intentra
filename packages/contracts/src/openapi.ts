@@ -42,9 +42,13 @@ import { EvidenceSchema } from './evidence.js';
 import { EscalationSchema } from './escalation.js';
 import { MemoryGraphSchema, MemorySearchQuerySchema, MemorySearchResultSchema } from './memory.js';
 import {
+  ChannelSchema,
   ReleasePublishInputSchema,
   ReleaseSchema,
+  ReleaseYankInputSchema,
+  RunnerLastUpdateSchema,
   RunnerUpdateSchema,
+  SemVerSchema,
   UpdateAssetSchema,
   UpdateManifestSchema,
   UpdatePolicyInputSchema,
@@ -70,6 +74,8 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
     in: 'cookie',
     name: 'intentra_session',
   });
+  registry.registerComponent('securitySchemes', 'releasePublish', { type: 'http', scheme: 'bearer' });
+  registry.registerComponent('securitySchemes', 'runnerToken', { type: 'http', scheme: 'bearer' });
 
   registry.register('Me', MeSchema);
   registry.register('LogoutResponse', LogoutResponseSchema);
@@ -122,6 +128,8 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
   registry.register('UpdatePolicyInput', UpdatePolicyInputSchema);
   registry.register('UpdateReportInput', UpdateReportInputSchema);
   registry.register('Release', ReleaseSchema);
+  registry.register('ReleaseYankInput', ReleaseYankInputSchema);
+  registry.register('RunnerLastUpdate', RunnerLastUpdateSchema);
 
   registry.registerPath({
     method: 'get',
@@ -337,6 +345,103 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
       204: { description: 'Runner revoked' },
       403: errorResponse('Forbidden'),
       404: errorResponse('Not found'),
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/admin/releases',
+    tags: ['runners'],
+    security: [{ releasePublish: [] }],
+    summary: 'Publish a signed runner release; a repeat publish updates the same version',
+    request: { body: { content: { 'application/json': { schema: ReleasePublishInputSchema } } } },
+    responses: {
+      201: { description: 'Release published', content: { 'application/json': { schema: ReleaseSchema } } },
+      200: { description: 'Release republished', content: { 'application/json': { schema: ReleaseSchema } } },
+      400: errorResponse('The manifest, its signature or its size is invalid'),
+      401: errorResponse('Wrong publish token'),
+      503: errorResponse('Release publishing or the release key is not configured'),
+    },
+  });
+  registry.registerPath({
+    method: 'post',
+    path: '/api/admin/releases/{version}/yank',
+    tags: ['runners'],
+    security: [{ releasePublish: [] }],
+    summary: 'Yank or un-yank a release',
+    request: {
+      params: z.object({ version: SemVerSchema }),
+      body: { content: { 'application/json': { schema: ReleaseYankInputSchema } } },
+    },
+    responses: {
+      204: { description: 'Release yanked or restored' },
+      400: errorResponse('Validation failed'),
+      401: errorResponse('Wrong publish token'),
+      404: errorResponse('Unknown release'),
+      503: errorResponse('Release publishing or the release key is not configured'),
+    },
+  });
+  registry.registerPath({
+    method: 'get',
+    path: '/api/runners/update',
+    tags: ['runners'],
+    security: [{ runnerToken: [] }],
+    summary: 'Resolve the update for the authenticated runner',
+    request: {
+      query: z.object({ current: z.string().optional(), channel: ChannelSchema.optional() }),
+    },
+    responses: {
+      200: { description: 'Update decision', content: { 'application/json': { schema: RunnerUpdateSchema } } },
+      400: errorResponse('Validation failed'),
+      401: errorResponse('Unknown or revoked runner token'),
+    },
+  });
+  registry.registerPath({
+    method: 'get',
+    path: '/api/runners/update/artifact/{fileName}',
+    tags: ['runners'],
+    security: [{ runnerToken: [] }],
+    summary: 'Stream a release artifact verified against the signed manifest',
+    request: { params: z.object({ fileName: z.string().min(1).max(255) }) },
+    responses: {
+      200: {
+        description: 'Artifact bytes with Content-Length and a sha-256 Digest',
+        content: { 'application/octet-stream': { schema: z.string() } },
+      },
+      401: errorResponse('Unknown or revoked runner token'),
+      404: errorResponse('Unknown or yanked artifact'),
+      502: errorResponse('The artifact source failed, timed out or returned other bytes'),
+    },
+  });
+  registry.registerPath({
+    method: 'post',
+    path: '/api/runners/update/report',
+    tags: ['runners'],
+    security: [{ runnerToken: [] }],
+    summary: 'Record an applied, rolled-back or failed runner update',
+    request: { body: { content: { 'application/json': { schema: UpdateReportInputSchema } } } },
+    responses: {
+      204: { description: 'Update report recorded' },
+      400: errorResponse('Validation failed'),
+      401: errorResponse('Unknown or revoked runner token'),
+    },
+  });
+  registry.registerPath({
+    method: 'put',
+    path: '/api/runners/{id}/update-policy',
+    tags: ['runners'],
+    security: [{ session: [] }],
+    summary: 'Pin a runner version or disable auto-update',
+    request: {
+      params: RunnerParams,
+      body: { content: { 'application/json': { schema: UpdatePolicyInputSchema } } },
+    },
+    responses: {
+      204: { description: 'Update policy changed' },
+      400: errorResponse('Validation failed'),
+      403: errorResponse('Forbidden'),
+      404: errorResponse('Not found'),
+      409: errorResponse('Runner is revoked'),
     },
   });
 

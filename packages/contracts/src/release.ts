@@ -10,6 +10,9 @@ export type SemVer = z.infer<typeof SemVerSchema>;
 export const ChannelSchema = z.enum(['stable', 'beta']);
 export type Channel = z.infer<typeof ChannelSchema>;
 
+export const UpdateStatusSchema = z.enum(['applied', 'rolled_back', 'failed']);
+export type UpdateStatus = z.infer<typeof UpdateStatusSchema>;
+
 export const TargetSchema = z.enum([
   'x86_64-unknown-linux-gnu',
   'aarch64-unknown-linux-gnu',
@@ -103,11 +106,29 @@ export const UpdateReportInputSchema = z
   .object({
     fromVersion: SemVerSchema,
     toVersion: SemVerSchema,
-    status: z.enum(['applied', 'rolled_back', 'failed']),
+    status: UpdateStatusSchema,
     reason: z.string().optional(),
   })
   .strict();
 export type UpdateReportInput = z.infer<typeof UpdateReportInputSchema>;
+
+export const ReleaseYankInputSchema = z
+  .object({
+    yanked: z.boolean(),
+  })
+  .strict();
+export type ReleaseYankInput = z.infer<typeof ReleaseYankInputSchema>;
+
+export const RunnerLastUpdateSchema = z
+  .object({
+    fromVersion: SemVerSchema,
+    toVersion: SemVerSchema,
+    status: UpdateStatusSchema,
+    reason: z.string().nullable(),
+    createdAt: IsoDateSchema,
+  })
+  .strict();
+export type RunnerLastUpdate = z.infer<typeof RunnerLastUpdateSchema>;
 
 export const ReleaseSchema = z
   .object({
