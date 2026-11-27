@@ -71,21 +71,24 @@ documented in `docs/development/commands.md`; use those names instead of inventi
 
 - Containers are non-root (api runs as uid 10001, web and ingress as the `nginx` user); every
   long-running service has a healthcheck. Only `ingress` publishes a host port
-  (`${WEB_PORT:-8090}`); `api` and `web` have no `ports` and no `container_name`, because
-  `docker rollout` cannot replace a service that has them.
+  (`${WEB_PORT:-8090}`); `api` and `web` have no `ports` and no `container_name`, because the
+  rolling deploy scales and replaces them with `docker compose up --scale`.
 - One public origin: ingress proxies to web, web proxies `/api`, `/api/events` and
   `/api/runners/ws` to api. Ingress and web resolve their upstream through Docker DNS
   (`resolver` + `zone` + `server ... resolve`), so a rolled container is picked up without
-  restarting the proxy.
-- On a live host, updates go through `docker rollout` — `scripts/deploy.sh` builds with
-  `INTENTRA_GIT_REVISION=$(git rev-parse HEAD)`, runs migrations, rolls api then web, and
-  verifies the revision label; never use `docker compose up -d --build` for an update. `ingress`
-  publishes the fixed port and is updated from `infra/compose` explicitly with
-  `INTENTRA_GIT_REVISION=$(git rev-parse HEAD) docker compose build ingress` followed by
-  `docker compose up -d --no-deps ingress`
+  restarting the proxy. The deploy pins the new container's address in the consuming proxy
+  before it removes the old container, then restores the dynamic config.
+- On a live host, updates go through `scripts/deploy.sh` — it builds with
+  `INTENTRA_GIT_REVISION=$(git rev-parse HEAD)`, runs migrations once, rolls api then web with a
+  deterministic drain (`scripts/rollout.sh`: pin, verify, remove, restore), recreates ingress,
+  and verifies the endpoints and the revision label; never use `docker compose up -d --build`
+  for an update. `docker-rollout` v0.14 is installed by `scripts/install-docker-rollout.sh`;
+  the plugin has no hook between healthy and removal, so `scripts/rollout.sh` implements the
+  drain itself. `ingress` publishes the fixed port and its recreate is the only non-rolling
+  step (`stop_grace_period: 2s`).
   ([`docs/operations/deploy.md`](docs/operations/deploy.md)).
-- Images carry `org.opencontainers.image.revision`; `docker-rollout` v0.14 is installed by
-  `scripts/install-docker-rollout.sh`, which pins the downloaded file by sha256.
+- Images carry `org.opencontainers.image.revision` = the commit whose bytes the image was built
+  from; the deploy refuses a dirty tree so the label stays true.
 - No secrets in `docker-compose.yml` or `.env.example`; runtime values come from
   `infra/compose/.env` (gitignored). Never commit `.env`.
 - The repository ships only portable deployment assets (`infra/compose`, `infra/memory`).

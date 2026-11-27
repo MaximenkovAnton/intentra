@@ -75,7 +75,9 @@ docker compose -f infra/compose/docker-compose.yml up --build   # first bring-up
 
 Updates on a live host use the rolling path, never `up -d --build`:
 `scripts/deploy.sh --check`, then `scripts/deploy.sh` (see
-[`docs/operations/deploy.md`](../operations/deploy.md)).
+[`docs/operations/deploy.md`](../operations/deploy.md)). The script runs migrations once, rolls
+api and web with a deterministic drain (pinning the replacement in the consuming proxy before
+the old container is removed), recreates ingress and verifies the endpoints and revision labels.
 
 `migrate` runs once and must succeed before `api` starts; `web` waits for the api healthcheck,
 `ingress` publishes the single origin on `http://localhost:${WEB_PORT:-8090}` and proxies to web

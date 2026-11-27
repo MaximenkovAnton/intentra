@@ -39,8 +39,9 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 
 1. The browser loads the SPA through the deployment proxy (NPM, TLS), which forwards to
    `ingress`; ingress proxies to web, and web proxies `/api` and `/api/events` to api, so web and
-   api share one origin. Both proxies re-resolve their upstream through Docker DNS, so a container
-   replaced by `docker rollout` is reached without restarting them.
+   api share one origin. Both proxies re-resolve their upstream through Docker DNS, and the
+   rolling deploy pins the replacement container in the consuming proxy before it removes the
+   old one, so traffic never has a removed address as its only peer.
 2. Login: web redirects to `/api/auth/login`; api performs OIDC authorization code + PKCE with
    Pocket ID and returns to `/api/auth/callback`; api stores a server-side session and sets an
    httpOnly, Secure, SameSite=Lax cookie. Intentra has no passwords, registration or reset.
@@ -61,8 +62,10 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 `infra/compose/docker-compose.yml` runs four services: `migrate` (one-shot Drizzle migrations),
 `api` (Node 24, non-root), `web` (nginx, non-root, static SPA + `/api` proxy) and `ingress`
 (nginx, the only published port, `${WEB_PORT:-8090}`). `api` and `web` have no published ports,
-so `docker rollout` can replace them one container at a time; the ingress and web configs resolve
-their upstream dynamically, and `scripts/deploy.sh` runs migrations and both rollouts. Postgres,
+so the rolling deploy can replace them one container at a time; the ingress and web configs
+resolve their upstream dynamically, and `scripts/deploy.sh` runs migrations, rolls api then web
+with a deterministic drain, recreates ingress and verifies the endpoints and the revision
+labels. Postgres,
 Pocket ID (`infra/idp`) and FalkorDB/Qdrant/Ollama (`infra/memory`) run on their own hosts; the
 API reaches them over the network. Host provisioning and addressing are environment-specific and
 stay in the operator's private infrastructure repository. CI (`.github/workflows/ci.yml`) runs
