@@ -131,6 +131,34 @@ describe("RunnerUpdateCell", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Проверьте введённые данные.")
   })
 
+  it("shows auto-update off without an available badge", async () => {
+    await i18n.changeLanguage("ru")
+    const offRunner = runner({ autoUpdate: false, updateAvailable: false })
+
+    const readOnly = renderWithProviders(<RunnerUpdateCell runner={offRunner} canManage={false} />)
+    expect(screen.getByText("Актуально")).toBeInTheDocument()
+    expect(screen.queryByText("Доступно обновление")).toBeNull()
+    expect(
+      screen.getByText("Версия не закреплена · Автообновление: выключено"),
+    ).toBeInTheDocument()
+    readOnly.unmount()
+
+    const fetchMock = installApiMock({
+      [POLICY_PATH]: () => new Response(null, { status: 204 }),
+    })
+    const userEventApi = userEvent.setup()
+    renderWithProviders(<RunnerUpdateCell runner={offRunner} canManage />)
+    const toggle = screen.getByRole("checkbox", { name: "Автообновление" })
+    expect(toggle).not.toBeChecked()
+
+    await userEventApi.click(toggle)
+
+    await expect(policyBodies(fetchMock)).resolves.toEqual({
+      path: `/api/runners/${RUNNER_ID}/update-policy`,
+      body: { pinnedVersion: null, autoUpdate: true },
+    })
+  })
+
   it("renders the policy read-only without controls for a non-owner", async () => {
     await i18n.changeLanguage("ru")
     renderWithProviders(

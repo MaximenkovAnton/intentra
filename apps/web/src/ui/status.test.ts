@@ -24,12 +24,14 @@ const cases: Array<{
   lastUpdate: UpdateEvent | null
   expected: RunnerUpdateStatus
 }> = [
-  { name: "actual without events or a newer release", updateAvailable: false, lastUpdate: null, expected: "actual" },
+  { name: "actual when no release is offered because auto-update is off", updateAvailable: false, lastUpdate: null, expected: "actual" },
   { name: "available before any event", updateAvailable: true, lastUpdate: null, expected: "available" },
   { name: "updated after an applied event", updateAvailable: false, lastUpdate: lastUpdate("applied"), expected: "updated" },
   { name: "updated after an applied event even if a newer release exists", updateAvailable: true, lastUpdate: lastUpdate("applied"), expected: "updated" },
   { name: "rolled_back after a rollback event", updateAvailable: true, lastUpdate: lastUpdate("rolled_back"), expected: "rolled_back" },
+  { name: "rolled_back stays visible when no release is offered", updateAvailable: false, lastUpdate: lastUpdate("rolled_back"), expected: "rolled_back" },
   { name: "failed after a failed event", updateAvailable: true, lastUpdate: lastUpdate("failed"), expected: "failed" },
+  { name: "failed stays visible when no release is offered", updateAvailable: false, lastUpdate: lastUpdate("failed"), expected: "failed" },
 ]
 
 describe("runner update status", () => {
