@@ -66,16 +66,28 @@ export async function loadStage(db: Database, stageId: string | null): Promise<S
   return row ?? null;
 }
 
+export type InsertExecutor = Pick<Database, 'insert'>;
+
+export async function insertStageRow(
+  executor: InsertExecutor,
+  intent: IntentRow,
+  kind: StageKind,
+  now: Date,
+): Promise<StageRow> {
+  const [stage] = await executor
+    .insert(stages)
+    .values({ intentId: intent.id, kind, status: 'running', startedAt: now })
+    .returning();
+  if (!stage) throw new Error('stage insert returned no row');
+  return stage;
+}
+
 export async function startStageRow(
   deps: OrchestratorDeps,
   intent: IntentRow,
   kind: StageKind,
 ): Promise<StageRow> {
-  const [stage] = await deps.db
-    .insert(stages)
-    .values({ intentId: intent.id, kind, status: 'running', startedAt: deps.now() })
-    .returning();
-  if (!stage) throw new Error('stage insert returned no row');
+  const stage = await insertStageRow(deps.db, intent, kind, deps.now());
   publishStage(deps, intent, stage);
   return stage;
 }
@@ -97,13 +109,14 @@ export async function finishStageRow(
   return updated;
 }
 
-export async function enqueueJob(
-  deps: OrchestratorDeps,
+export async function insertJob(
+  executor: InsertExecutor,
   intent: IntentRow,
   stage: StageRow,
   payload: JobPayload,
+  now: Date,
 ): Promise<JobRow> {
-  const [job] = await deps.db
+  const [job] = await executor
     .insert(jobs)
     .values({
       intentId: intent.id,
@@ -111,10 +124,20 @@ export async function enqueueJob(
       runtime: 'auto',
       status: 'queued',
       payload,
-      nextAttemptAt: deps.now(),
+      nextAttemptAt: now,
     })
     .returning();
   if (!job) throw new Error('job insert returned no row');
+  return job;
+}
+
+export async function enqueueJob(
+  deps: OrchestratorDeps,
+  intent: IntentRow,
+  stage: StageRow,
+  payload: JobPayload,
+): Promise<JobRow> {
+  const job = await insertJob(deps.db, intent, stage, payload, deps.now());
   publishJob(deps, intent, job);
   return job;
 }

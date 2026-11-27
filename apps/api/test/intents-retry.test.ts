@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { LightMyRequestResponse } from 'fastify';
 import { and, eq } from 'drizzle-orm';
@@ -10,11 +11,12 @@ import {
   seedProject,
   seedSession,
   seedUser,
+  waitForLockWaiters,
   type Harness,
 } from './harness.js';
 import { EMPTY_CONTEXT_PACK } from '../src/prompts/context.js';
 import { frontOfficePrompt } from '../src/prompts/templates.js';
-import { auditLog, intents, jobs, projectMembers, stages } from '../src/db/schema.js';
+import { auditLog, intents, jobs, projectMembers, projects, stages } from '../src/db/schema.js';
 import type { IntentRow, UserRow } from '../src/db/schema.js';
 import { createIntent, postMessage, type Actor, type IntentDeps } from '../src/intents/service.js';
 
@@ -157,14 +159,27 @@ describe.skipIf(!hasDatabase)('intent retry API', () => {
     expect(await countJobs(intent.id)).toBe(1);
   });
 
-  it('serializes two concurrent retries into one intake job', async () => {
+  it('serializes two concurrent retries behind the intent row lock', async () => {
     const { editor, project } = await setupProject();
     const intent = await draft(project.id, actorOf(editor.user));
 
-    const responses = await Promise.all([
+    const client = await harness.pool.connect();
+    const observer = await harness.pool.connect();
+    await client.query('begin');
+    await client.query('select 1 from intents where id = $1 for update', [intent.id]);
+    const retries = Promise.all([
       call(editor.headers, `/api/intents/${intent.id}/retry`),
       call(editor.headers, `/api/intents/${intent.id}/retry`),
     ]);
+    const locked = await waitForLockWaiters(observer, 2).then(
+      () => true,
+      () => false,
+    );
+    await client.query('rollback');
+    client.release();
+    observer.release();
+    const responses = await retries;
+    expect(locked).toBe(true);
     expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
     expect(await countStages(intent.id)).toBe(1);
     expect(await countJobs(intent.id)).toBe(1);
@@ -209,7 +224,7 @@ describe.skipIf(!hasDatabase)('intent retry API', () => {
     expect(await countJobs(intent.id)).toBe(before.jobs);
   });
 
-  it('requires editor access and hides an intent of another project', async () => {
+  it('requires editor access and hides every invisible intent the same way', async () => {
     const { editor, viewer, project } = await setupProject();
     const intent = await draft(project.id, actorOf(editor.user));
 
@@ -220,12 +235,27 @@ describe.skipIf(!hasDatabase)('intent retry API', () => {
     const outsider = await session();
     const foreignProject = await seedProject(harness.db, outsider.user.id, 'other');
     const foreign = await draft(foreignProject.id, actorOf(outsider.user), 'Foreign intent');
-    const hidden = await call(editor.headers, `/api/intents/${foreign.id}/retry`);
-    expect(hidden.statusCode).toBe(404);
-    expect(hidden.json()).toMatchObject({ code: 'NOT_FOUND' });
+
+    const archivedProject = await seedProject(harness.db, editor.user.id, 'archived');
+    const archived = await draft(archivedProject.id, actorOf(editor.user), 'Archived intent');
+    await harness.db
+      .update(projects)
+      .set({ archivedAt: new Date() })
+      .where(eq(projects.id, archivedProject.id));
+
+    const invisible = await Promise.all([
+      call(editor.headers, `/api/intents/${foreign.id}/retry`),
+      call(editor.headers, `/api/intents/${randomUUID()}/retry`),
+      call(editor.headers, `/api/intents/${archived.id}/retry`),
+    ]);
+    for (const response of invisible) {
+      expect(response.statusCode).toBe(404);
+    }
+    expect(new Set(invisible.map((response) => response.body)).size).toBe(1);
 
     expect(await countStages(intent.id)).toBe(0);
     expect(await countStages(foreign.id)).toBe(0);
+    expect(await countStages(archived.id)).toBe(0);
     const [foreignRow] = await harness.db.select().from(intents).where(eq(intents.id, foreign.id));
     expect(foreignRow).toMatchObject({ status: 'draft' });
   });

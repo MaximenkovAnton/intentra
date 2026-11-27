@@ -1,20 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
-import type { PoolClient } from 'pg';
-import { authCookie, createHarness, hasDatabase, resetDatabase, seedProject, seedSession, seedUser, type Harness } from './harness.js';
+import {
+  authCookie,
+  createHarness,
+  hasDatabase,
+  resetDatabase,
+  seedProject,
+  seedSession,
+  seedUser,
+  waitForLockWaiters,
+  type Harness,
+} from './harness.js';
 import { projectMembers } from '../src/db/schema.js';
-
-const waitForBlockedRemovals = async (client: PoolClient, expected: number): Promise<void> => {
-  const deadline = Date.now() + 5_000;
-  while (Date.now() < deadline) {
-    const result = await client.query<{ count: string }>(
-      "select count(*)::text as count from pg_stat_activity where wait_event_type = 'Lock' and query ilike '%for update%'",
-    );
-    if (Number(result.rows[0]?.count) >= expected) return;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  throw new Error('the two owner removals never blocked on the project row lock');
-};
 
 describe.skipIf(!hasDatabase)('RBAC', () => {
   let harness: Harness;
@@ -210,7 +207,7 @@ describe.skipIf(!hasDatabase)('RBAC', () => {
       harness.app.inject({ method: 'DELETE', url: `/api/projects/acme/members/${secondOwner.id}`, headers }),
     ]);
     try {
-      await waitForBlockedRemovals(observer, 2);
+      await waitForLockWaiters(observer, 2);
     } finally {
       await client.query('rollback');
       client.release();
