@@ -17,7 +17,7 @@ import {
 } from './jobs.js';
 import { createRunnerHub, type RunnerConnectionView, type RunnerHub } from './hub.js';
 import { handleRunnerMessage } from './ingest.js';
-import { startBuild, startIntake, startPlan } from './flow.js';
+import { retryIntake, startBuild, startIntake, startPlan } from './flow.js';
 import { acceptIntent, cancelIntent, reworkIntent, type AcceptResult } from './verify.js';
 import { buildEvidence, renderPrometheusMetrics } from './metrics.js';
 
@@ -35,6 +35,7 @@ export interface Orchestrator {
   close(): void;
   handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer): void;
   startIntake(intent: IntentRow): Promise<void>;
+  retry(actor: Actor, intent: IntentRow): Promise<IntentRow>;
   startPlan(intent: IntentRow): Promise<void>;
   startBuild(intent: IntentRow): Promise<StageRow>;
   dispatch(): Promise<void>;
@@ -149,6 +150,11 @@ export function createOrchestrator(deps: AppDeps): Orchestrator {
     startIntake: async (intent) => {
       await startIntake(orchestratorDeps, intent);
       await dispatch();
+    },
+    retry: async (actor, intent) => {
+      const retried = await retryIntake(orchestratorDeps, actor, intent);
+      await dispatch();
+      return retried;
     },
     startPlan: async (intent) => {
       await startPlan(orchestratorDeps, intent);

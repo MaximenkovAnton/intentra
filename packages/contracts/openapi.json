@@ -7843,6 +7843,201 @@
         }
       }
     },
+    "/api/intents/{id}/retry": {
+      "post": {
+        "tags": [
+          "intents"
+        ],
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Restart intake for a draft intent whose intake failed",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intent with a new intake stage and job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "clarifying",
+                        "specified",
+                        "critiqued",
+                        "planned",
+                        "building",
+                        "verifying",
+                        "awaiting_acceptance",
+                        "accepted",
+                        "rejected",
+                        "cancelled"
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "acceptedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "title",
+                    "statement",
+                    "status",
+                    "createdBy",
+                    "createdAt",
+                    "acceptedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The intent is not a draft or an intake stage or job is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/intents/{id}/spec": {
       "get": {
         "tags": [

@@ -120,7 +120,7 @@ impl Repo {
     }
 
     pub fn ensure_clean(&self) -> Result<(), GitError> {
-        let entries = status_entries(&self.root)?;
+        let entries = tracked_status_entries(&self.root)?;
         if entries.is_empty() {
             return Ok(());
         }
@@ -370,7 +370,23 @@ pub fn exclude_intentra(dir: &Path) -> Result<(), GitError> {
 }
 
 fn status_entries(dir: &Path) -> Result<Vec<String>, GitError> {
-    let output = git_ok(dir, &["--no-optional-locks", "status", "--porcelain"])?;
+    status_lines(dir, &["--no-optional-locks", "status", "--porcelain"])
+}
+
+fn tracked_status_entries(dir: &Path) -> Result<Vec<String>, GitError> {
+    status_lines(
+        dir,
+        &[
+            "--no-optional-locks",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+        ],
+    )
+}
+
+fn status_lines(dir: &Path, args: &[&str]) -> Result<Vec<String>, GitError> {
+    let output = git_ok(dir, args)?;
     Ok(output
         .lines()
         .map(str::trim_end)
@@ -509,11 +525,42 @@ mod tests {
     }
 
     #[test]
-    fn a_dirty_worktree_is_reported_before_a_new_job() {
+    fn untracked_files_do_not_block_a_new_job() {
         let dir = tempfile::tempdir().unwrap();
         let repo = init_repo(dir.path());
-        std::fs::write(dir.path().join("README.md"), "changed\n").unwrap();
-        assert!(matches!(repo.ensure_clean(), Err(GitError::Dirty(_))));
+        std::fs::write(dir.path().join("scratch.txt"), "notes\n").unwrap();
+        repo.ensure_clean().unwrap();
+        let worktree = repo
+            .worktree_add("job-1", "intent-one", "add-thing")
+            .unwrap();
+        assert!(worktree.path.is_dir());
+    }
+
+    #[test]
+    fn uncommitted_tracked_changes_block_a_new_job() {
+        for (name, contents) in [("modified", Some("changed\n")), ("deleted", None)] {
+            let dir = tempfile::tempdir().unwrap();
+            let repo = init_repo(dir.path());
+            match contents {
+                Some(contents) => std::fs::write(repo.root.join("README.md"), contents).unwrap(),
+                None => std::fs::remove_file(repo.root.join("README.md")).unwrap(),
+            }
+            let error = repo.ensure_clean().unwrap_err();
+            assert!(matches!(error, GitError::Dirty(_)), "{name}: {error}");
+            let error = repo
+                .worktree_add("job-1", "intent-one", "add-thing")
+                .unwrap_err();
+            assert!(matches!(error, GitError::Dirty(_)), "{name}: {error}");
+            assert!(
+                !repo
+                    .root
+                    .join(INTENTRA_DIR)
+                    .join("worktrees")
+                    .join("job-1")
+                    .exists(),
+                "{name}: a dirty tree still got a worktree"
+            );
+        }
     }
 
     #[test]

@@ -7,8 +7,10 @@ import { useProjectEvents } from "../api/events"
 import {
   useAcceptIntent,
   useCancelIntent,
+  useEvidence,
   useIntent,
   useIntentRole,
+  useRetryIntent,
   useReworkIntent,
 } from "../api/queries"
 import type { ReworkIntentInput } from "../api/types"
@@ -166,8 +168,10 @@ const CancelConfirm = ({ intentId, onClose }: { intentId: string; onClose: () =>
 export const IntentShellPage = ({ intentId }: { intentId: string }) => {
   const { t } = useTranslation()
   const intent = useIntent(intentId)
+  const evidence = useEvidence(intentId)
   const { projectKey, role } = useIntentRole(intent.data?.intent.projectId)
   const accept = useAcceptIntent(intentId)
+  const retry = useRetryIntent(intentId)
   const apiErrorMessage = useApiErrorMessage()
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const [isReworking, setIsReworking] = useState(false)
@@ -204,6 +208,18 @@ export const IntentShellPage = ({ intentId }: { intentId: string }) => {
   const terminal = TERMINAL.has(data.intent.status)
   const manage = canManage(role)
   const edit = canEdit(role)
+  const stages = evidence.data?.stages ?? []
+  const latestStage = stages.at(-1)
+  const hasActiveStage = stages.some(
+    (stage) => stage.status === "pending" || stage.status === "running",
+  )
+  const failureReason =
+    !terminal &&
+    !hasActiveStage &&
+    latestStage !== undefined &&
+    (latestStage.status === "failed" || latestStage.status === "blocked")
+      ? latestStage.error
+      : null
 
   return (
     <section className="page" aria-labelledby="intent-title">
@@ -245,6 +261,16 @@ export const IntentShellPage = ({ intentId }: { intentId: string }) => {
               {t("intent.actions.rework")}
             </button>
           ) : null}
+          {edit && data.intent.status === "draft" ? (
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => retry.mutate()}
+              disabled={retry.isPending}
+            >
+              {t("intent.actions.retry")}
+            </button>
+          ) : null}
           {edit && !terminal ? (
             <button
               ref={cancelButtonRef}
@@ -257,10 +283,21 @@ export const IntentShellPage = ({ intentId }: { intentId: string }) => {
           ) : null}
         </div>
       </header>
+      {failureReason === null ? null : (
+        <section className="section" role="alert">
+          <h2>{t("intent.failure.title")}</h2>
+          <p className="field__error">{failureReason}</p>
+        </section>
+      )}
       <p>{data.intent.statement}</p>
       {accept.isError ? (
         <p className="field__error" role="alert">
           {apiErrorMessage(accept.error)}
+        </p>
+      ) : null}
+      {retry.isError ? (
+        <p className="field__error" role="alert">
+          {apiErrorMessage(retry.error)}
         </p>
       ) : null}
       {isReworking ? (

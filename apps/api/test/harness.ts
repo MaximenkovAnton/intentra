@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { loadConfig, type AppConfig } from '../src/config.js';
 import { createDatabase, type Database } from '../src/db/client.js';
 import { buildApp } from '../src/app.js';
@@ -88,6 +88,18 @@ export async function resetDatabase(db: Database): Promise<void> {
   await db.execute(
     sql`DO $$ DECLARE r record; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE'; END LOOP; END $$;`,
   );
+}
+
+export async function waitForLockWaiters(client: PoolClient, expected: number): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const result = await client.query<{ count: string }>(
+      "select count(*)::text as count from pg_stat_activity where wait_event_type = 'Lock' and query ilike '%for update%'",
+    );
+    if (Number(result.rows[0]?.count) >= expected) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`expected ${expected} backend(s) to block on a row lock`);
 }
 
 export async function seedUser(

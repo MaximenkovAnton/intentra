@@ -450,6 +450,20 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
     },
   });
   registry.registerPath({
+    method: 'post',
+    path: '/api/intents/{id}/retry',
+    tags: ['intents'],
+    security: [{ session: [] }],
+    summary: 'Restart intake for a draft intent whose intake failed',
+    request: { params: IntentParams },
+    responses: {
+      200: { description: 'Intent with a new intake stage and job', content: { 'application/json': { schema: IntentSchema } } },
+      403: errorResponse('Forbidden'),
+      404: errorResponse('Not found'),
+      409: errorResponse('The intent is not a draft or an intake stage or job is active'),
+    },
+  });
+  registry.registerPath({
     method: 'get',
     path: '/api/intents/{id}/spec',
     tags: ['spec'],
