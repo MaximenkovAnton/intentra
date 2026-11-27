@@ -279,6 +279,27 @@ export function registerIntentRoutes(app: FastifyInstance, deps: AppDeps, guards
     },
   );
 
+  typed.post(
+    '/api/intents/:id/retry',
+    {
+      preHandler: [guards.requireUser, guards.intentAccess('editor', { hidden: 'notfound' })],
+      schema: {
+        params: IntentParams,
+        response: {
+          200: IntentSchema,
+          403: ApiErrorSchema,
+          404: ApiErrorSchema,
+          409: ApiErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const intent = currentIntent(request);
+      const user = currentUser(request);
+      return toIntentDto(await app.orchestrator.retry({ kind: 'user', id: user.id }, intent));
+    },
+  );
+
   typed.get(
     '/api/intents/:id/spec',
     {

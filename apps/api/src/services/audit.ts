@@ -31,7 +31,8 @@ export type AuditAction =
   | 'intent.transition'
   | 'intent.accept'
   | 'intent.rework'
-  | 'intent.cancel';
+  | 'intent.cancel'
+  | 'intent.retry';
 
 export interface AuditEntry {
   readonly actorKind: 'user' | 'runner' | 'system';

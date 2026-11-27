@@ -2633,6 +2633,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intents/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restart intake for a draft intent whose intake failed */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Intent with a new intake stage and job */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            projectId: string;
+                            title: string;
+                            statement: string;
+                            /** @enum {string} */
+                            status: "draft" | "clarifying" | "specified" | "critiqued" | "planned" | "building" | "verifying" | "awaiting_acceptance" | "accepted" | "rejected" | "cancelled";
+                            /** Format: uuid */
+                            createdBy: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description The intent is not a draft or an intake stage or job is active */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intents/{id}/spec": {
         parameters: {
             query?: never;

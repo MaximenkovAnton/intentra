@@ -29,7 +29,7 @@ describe("IntentOfficeTab", () => {
     installApiMock(baseRoutes("editor"))
     renderApp(`/intents/${intentId}`)
 
-    expect(await screen.findByText("Какую базу использовать?")).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Какую базу использовать?" })).toBeInTheDocument()
     expect(screen.getByText("Хранить интенты и историю.")).toBeInTheDocument()
     expect(screen.getByText("Рекомендация")).toBeInTheDocument()
     expect(screen.getByText("По умолчанию")).toBeInTheDocument()
@@ -76,7 +76,7 @@ describe("IntentOfficeTab", () => {
     installApiMock(baseRoutes("viewer"))
     renderApp(`/intents/${intentId}`)
 
-    expect(await screen.findByText("Какую базу использовать?")).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Какую базу использовать?" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Ответить" })).toBeNull()
     expect(screen.queryByLabelText("Сообщение")).toBeNull()
     expect(screen.getAllByText("Ваша роль — только чтение.").length).toBeGreaterThan(0)

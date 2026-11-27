@@ -53,7 +53,9 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 4. Intent flow: the user creates an intent → api runs stages (`intake`, `spec`, `spec_critic`,
    `plan`, `build`, `review`, `verify`, `accept`) and offers jobs to a runner → the runner
    executes locally with the configured agent runtime → statuses, findings, verdicts and a
-   content-free diff summary come back → the human accepts.
+   content-free diff summary come back → the human accepts. A `draft` intent whose intake
+   failed or expired is restarted through `POST /api/intents/{id}/retry`, which enqueues a fresh
+   intake stage and job.
 5. Privacy: the centre receives intent/spec/AC/findings texts, statuses, metadata
    (path/symbol/blobSha), links and numbers — never file contents, diffs, logs, test output,
    transcripts or keys.

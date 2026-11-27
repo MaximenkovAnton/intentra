@@ -4,7 +4,7 @@
 
 ## Contributor License Agreement
 
-- [ ] I have read the [CLA](CLA.md) and I will sign it by commenting:
+- [ ] I have read the [CLA](https://github.com/MaximenkovAnton/intentra/blob/main/CLA.md) and I will sign it by commenting:
       `I have read the CLA Document and I hereby sign the CLA`
 
 ## Checklist

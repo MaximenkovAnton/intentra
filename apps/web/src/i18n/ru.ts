@@ -228,6 +228,10 @@ const resource = {
         build: "Исполнение",
         plan: "План",
       },
+      retry: "Повторить запуск",
+    },
+    failure: {
+      title: "Почему интент не исполняется",
     },
     office: {
       cardTitle: "Карточка интента",
