@@ -71,5 +71,5 @@ CSS tokens, i18n, Rust gates).
 Proprietary. Copyright (c) 2026 Anton Maksimenkau, all rights reserved. The
 source is publicly available for viewing and evaluation only; no license to
 use, modify or distribute it is granted. External contributions are accepted
-only under the terms in [`CONTRIBUTING.md`](CONTRIBUTING.md); see
-[`LICENSE`](LICENSE).
+only after signing the [Contributor License Agreement](CLA.md); see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) and [`LICENSE`](LICENSE).

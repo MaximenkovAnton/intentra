@@ -2,11 +2,10 @@
 
 <!-- What changes, and why. Link the issue if there is one. -->
 
-## Contribution terms
+## Contributor License Agreement
 
-- [ ] I have read and agree to the contribution terms in
-      [CONTRIBUTING.md](CONTRIBUTING.md): I grant the license, assign copyright
-      where permitted, and accept the patent and moral-rights terms.
+- [ ] I have read the [CLA](CLA.md) and I will sign it by commenting:
+      `I have read the CLA Document and I hereby sign the CLA`
 
 ## Checklist
 
