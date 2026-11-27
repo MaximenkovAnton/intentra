@@ -38,6 +38,12 @@ describe('OpenAPI 3.1 document', () => {
     '/api/intents/{id}/plan',
     '/api/intents/{id}/jobs',
     '/api/intents/{id}/evidence',
+    '/api/admin/releases',
+    '/api/admin/releases/{version}/yank',
+    '/api/runners/update',
+    '/api/runners/update/artifact/{fileName}',
+    '/api/runners/update/report',
+    '/api/runners/{id}/update-policy',
   ])('documents %s', (path) => {
     expect(document.paths?.[path]).toBeDefined();
   });
@@ -48,7 +54,24 @@ describe('OpenAPI 3.1 document', () => {
       in: 'cookie',
       name: 'intentra_session',
     });
+    expect(document.components?.securitySchemes?.releasePublish).toMatchObject({
+      type: 'http',
+      scheme: 'bearer',
+    });
+    expect(document.components?.securitySchemes?.runnerToken).toMatchObject({
+      type: 'http',
+      scheme: 'bearer',
+    });
     expect(document.components?.schemas?.ApiError).toBeDefined();
+  });
+
+  it('documents the release channel endpoints', () => {
+    expect(document.paths?.['/api/admin/releases']?.post).toBeDefined();
+    expect(document.paths?.['/api/admin/releases/{version}/yank']?.post).toBeDefined();
+    expect(document.paths?.['/api/runners/update']?.get).toBeDefined();
+    expect(document.paths?.['/api/runners/update/artifact/{fileName}']?.get).toBeDefined();
+    expect(document.paths?.['/api/runners/update/report']?.post).toBeDefined();
+    expect(document.paths?.['/api/runners/{id}/update-policy']?.put).toBeDefined();
   });
 
   it('registers the release schemas as OpenAPI components', () => {
@@ -60,6 +83,8 @@ describe('OpenAPI 3.1 document', () => {
       'UpdatePolicyInput',
       'UpdateReportInput',
       'Release',
+      'ReleaseYankInput',
+      'RunnerLastUpdate',
     ]) {
       expect(document.components?.schemas?.[name]).toBeDefined();
     }

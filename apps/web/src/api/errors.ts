@@ -29,6 +29,8 @@ const API_ERROR_CODES = {
   LIMIT: true,
   RUNNER_OFFLINE: true,
   ESCALATION_EXPIRED: true,
+  UPSTREAM_FAILED: true,
+  RELEASE_DISABLED: true,
   INTERNAL: true,
 } satisfies Record<ErrorCode, true>
 

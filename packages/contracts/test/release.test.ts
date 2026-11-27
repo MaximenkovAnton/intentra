@@ -5,8 +5,13 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { z } from 'zod';
 import {
   ChannelSchema,
+  ERROR_HTTP_STATUS,
+  ErrorCodeSchema,
   ReleasePublishInputSchema,
   ReleaseSchema,
+  ReleaseYankInputSchema,
+  RunnerLastUpdateSchema,
+  RunnerSchema,
   RunnerUpdateSchema,
   SemVerSchema,
   SignatureSchema,
@@ -14,6 +19,7 @@ import {
   UpdateManifestSchema,
   UpdatePolicyInputSchema,
   UpdateReportInputSchema,
+  UpdateStatusSchema,
   type Release,
   type ReleasePublishInput,
   type RunnerUpdate,
@@ -251,5 +257,57 @@ describe('release manifest contract', () => {
     expect(Buffer.from(TEST_SEED, 'base64')).toHaveLength(32);
     expect(Buffer.from(MANIFEST_SIG, 'base64')).toHaveLength(64);
     expect(TEST_PUB).not.toBe(PLACEHOLDER);
+  });
+
+  it('validates the yank input and the last-update read model', () => {
+    expect(ReleaseYankInputSchema.safeParse({ yanked: true }).success).toBe(true);
+    for (const rejected of [{ yanked: 'true' }, {}, { yanked: true, extra: 1 }]) {
+      expect(ReleaseYankInputSchema.safeParse(rejected).success).toBe(false);
+    }
+
+    const lastUpdate = {
+      fromVersion: '0.1.0',
+      toVersion: '0.2.0',
+      status: 'applied',
+      reason: null,
+      createdAt: '2026-11-27T18:00:00Z',
+    };
+    expect(RunnerLastUpdateSchema.safeParse(lastUpdate).success).toBe(true);
+    expect(RunnerLastUpdateSchema.safeParse({ ...lastUpdate, status: 'ok' }).success).toBe(false);
+    expect(RunnerLastUpdateSchema.safeParse({ ...lastUpdate, createdAt: '2026-11-27 18:00:00Z' }).success).toBe(
+      false,
+    );
+
+    const runner = {
+      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      name: 'laptop',
+      ownerUserId: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      os: 'linux',
+      arch: 'x86_64',
+      version: '0.1.0',
+      capabilities: [],
+      status: 'offline',
+      lastSeenAt: null,
+      revokedAt: null,
+      pinnedVersion: null,
+      autoUpdate: true,
+      latestVersion: '0.2.0',
+      updateAvailable: true,
+      lastUpdate: null,
+    };
+    expect(RunnerSchema.safeParse(runner).success).toBe(true);
+    for (const field of ['pinnedVersion', 'autoUpdate', 'latestVersion', 'updateAvailable', 'lastUpdate']) {
+      const without: Record<string, unknown> = { ...runner };
+      delete without[field];
+      expect(RunnerSchema.safeParse(without).success).toBe(false);
+    }
+    expect(UpdateStatusSchema.options).toEqual(['applied', 'rolled_back', 'failed']);
+  });
+
+  it('maps the release error codes to their statuses', () => {
+    expect(ERROR_HTTP_STATUS.UPSTREAM_FAILED).toBe(502);
+    expect(ERROR_HTTP_STATUS.RELEASE_DISABLED).toBe(503);
+    expect(ErrorCodeSchema.safeParse('UPSTREAM_FAILED').success).toBe(true);
+    expect(ErrorCodeSchema.safeParse('RELEASE_DISABLED').success).toBe(true);
   });
 });

@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { IdSchema, type ProjectRole } from '@intentra/contracts';
 import type { AppConfig } from '../config.js';
 import type { Database } from '../db/client.js';
-import { intents, projectMembers, projects, type IntentRow, type ProjectRow } from '../db/schema.js';
+import { intents, projectMembers, projects, type IntentRow, type ProjectRow, type RunnerRow } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import {
   findSession,
@@ -42,6 +42,10 @@ export function currentIntent(request: FastifyRequest): IntentRow {
 
 export function isAtLeast(role: ProjectAccess, minimum: ProjectRole): boolean {
   return role === 'admin' || ROLE_RANK[role] >= ROLE_RANK[minimum];
+}
+
+export function canManageRunner(runner: RunnerRow, user: { id: string; isAdmin: boolean }): boolean {
+  return user.isAdmin || runner.ownerUserId === user.id;
 }
 
 function readPathKey(request: FastifyRequest): string | null {

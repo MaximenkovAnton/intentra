@@ -52,6 +52,13 @@ services:
       OLLAMA_URL: "${OLLAMA_URL:-http://localhost:11434}"
       MEMORY_EMBEDDING_MODEL: "${MEMORY_EMBEDDING_MODEL:-bge-m3}"
       MEMORY_INTERNAL_TOKEN: "${MEMORY_INTERNAL_TOKEN:-}"
+      RELEASE_PUBLISH_TOKEN: "${RELEASE_PUBLISH_TOKEN:-}"
+      RELEASE_CACHE_DIR: "${RELEASE_CACHE_DIR:-/data/releases}"
+      RELEASE_MAX_ARTIFACT_BYTES: "${RELEASE_MAX_ARTIFACT_BYTES:-268435456}"
+      GITHUB_RELEASE_TOKEN: "${GITHUB_RELEASE_TOKEN:-}"
+    volumes:
+      # Content-addressed artifact cache; derived data, safe to remove.
+      - release-cache:/data/releases
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -98,3 +105,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+volumes:
+  release-cache:

@@ -479,6 +479,8 @@ export const en: typeof ru = {
     LIMIT: "The limit was exceeded. Try again later.",
     RUNNER_OFFLINE: "The runner is offline. Try again later.",
     ESCALATION_EXPIRED: "The time to answer the question has expired.",
+    UPSTREAM_FAILED: "The update source is unavailable or returned invalid data.",
+    RELEASE_DISABLED: "Release publishing is not configured on this server.",
     UNKNOWN: "The request failed. Please try again.",
   },
 }

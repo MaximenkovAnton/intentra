@@ -15,6 +15,8 @@ import { registerMemoryRoutes } from './routes/memory.js';
 import { registerOpenApiRoute } from './routes/openapi.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerRunnerRoutes } from './routes/runners.js';
+import { registerAdminReleaseRoutes } from './routes/admin-releases.js';
+import { registerRunnerUpdateRoutes } from './routes/runner-updates.js';
 import { registerMetricsRoute } from './routes/metrics.js';
 import { createOrchestrator } from './orchestrator/service.js';
 
@@ -46,6 +48,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.setSerializerCompiler(serializerCompiler);
   app.decorateRequest('user', null);
   app.decorateRequest('project', null);
+  app.decorateRequest('runner', null);
   registerErrorHandler(app);
 
   const expectedOrigin = new URL(deps.config.publicUrl).origin;
@@ -81,6 +84,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerMemberRoutes(app, deps, guards);
   registerMemoryRoutes(app, deps, guards);
   registerRunnerRoutes(app, deps, guards);
+  registerAdminReleaseRoutes(app, deps);
+  registerRunnerUpdateRoutes(app, deps, guards);
   registerIntentRoutes(app, deps, guards);
   registerEventRoutes(app, deps, guards);
 

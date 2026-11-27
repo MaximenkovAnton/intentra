@@ -32,13 +32,18 @@ ENV NODE_ENV=production \
 
 RUN npm install --global pnpm@11.28.5 \
  && addgroup -S -g 10001 intentra \
- && adduser -S -D -H -u 10001 -G intentra intentra
+ && adduser -S -D -H -u 10001 -G intentra intentra \
+ && mkdir -p /data/releases \
+ && chown -R intentra:intentra /data
 
 WORKDIR /repo
 COPY --from=build --chown=intentra:intentra /repo/package.json /repo/pnpm-workspace.yaml /repo/pnpm-lock.yaml ./
 COPY --from=build --chown=intentra:intentra /repo/node_modules ./node_modules
 COPY --from=build --chown=intentra:intentra /repo/packages/contracts ./packages/contracts
 COPY --from=build --chown=intentra:intentra /repo/apps/api ./apps/api
+# The release public key ships with the API: publish and update checks use the
+# same file the runner embeds. A release build replaces the placeholder value.
+COPY --chown=intentra:intentra crates/runner-core/keys/release.pub ./crates/runner-core/keys/release.pub
 
 USER intentra
 EXPOSE 8080

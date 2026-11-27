@@ -45,6 +45,14 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "intentra_session"
+      },
+      "releasePublish": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "runnerToken": {
+        "type": "http",
+        "scheme": "bearer"
       }
     },
     "schemas": {
@@ -460,6 +468,68 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "pinnedVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "autoUpdate": {
+            "type": "boolean"
+          },
+          "latestVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "updateAvailable": {
+            "type": "boolean"
+          },
+          "lastUpdate": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "fromVersion": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+              },
+              "toVersion": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "applied",
+                  "rolled_back",
+                  "failed"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "fromVersion",
+              "toVersion",
+              "status",
+              "reason",
+              "createdAt"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -472,7 +542,12 @@
           "capabilities",
           "status",
           "lastSeenAt",
-          "revokedAt"
+          "revokedAt",
+          "pinnedVersion",
+          "autoUpdate",
+          "latestVersion",
+          "updateAvailable",
+          "lastUpdate"
         ]
       },
       "RunnerList": {
@@ -530,6 +605,68 @@
                     "null"
                   ],
                   "format": "date-time"
+                },
+                "pinnedVersion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                },
+                "autoUpdate": {
+                  "type": "boolean"
+                },
+                "latestVersion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                },
+                "updateAvailable": {
+                  "type": "boolean"
+                },
+                "lastUpdate": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "fromVersion": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "toVersion": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "applied",
+                        "rolled_back",
+                        "failed"
+                      ]
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "fromVersion",
+                    "toVersion",
+                    "status",
+                    "reason",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "required": [
@@ -542,7 +679,12 @@
                 "capabilities",
                 "status",
                 "lastSeenAt",
-                "revokedAt"
+                "revokedAt",
+                "pinnedVersion",
+                "autoUpdate",
+                "latestVersion",
+                "updateAvailable",
+                "lastUpdate"
               ]
             }
           },
@@ -814,6 +956,8 @@
               "LIMIT",
               "RUNNER_OFFLINE",
               "ESCALATION_EXPIRED",
+              "UPSTREAM_FAILED",
+              "RELEASE_DISABLED",
               "INTERNAL"
             ]
           },
@@ -3666,6 +3810,57 @@
           "notes"
         ],
         "additionalProperties": false
+      },
+      "ReleaseYankInput": {
+        "type": "object",
+        "properties": {
+          "yanked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "yanked"
+        ],
+        "additionalProperties": false
+      },
+      "RunnerLastUpdate": {
+        "type": "object",
+        "properties": {
+          "fromVersion": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "toVersion": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "rolled_back",
+              "failed"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "fromVersion",
+          "toVersion",
+          "status",
+          "reason",
+          "createdAt"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -3710,6 +3905,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -3783,6 +3980,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -3817,6 +4016,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -3887,6 +4088,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -3983,6 +4186,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4136,6 +4341,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4290,6 +4497,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4324,6 +4533,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4358,6 +4569,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4481,6 +4694,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4515,6 +4730,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4671,6 +4888,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4705,6 +4924,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4739,6 +4960,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4799,6 +5022,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4833,6 +5058,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4952,6 +5179,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -4986,6 +5215,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5112,6 +5343,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5146,6 +5379,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5180,6 +5415,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5214,6 +5451,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5285,6 +5524,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5319,6 +5560,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5431,6 +5674,68 @@
                               "null"
                             ],
                             "format": "date-time"
+                          },
+                          "pinnedVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                          },
+                          "autoUpdate": {
+                            "type": "boolean"
+                          },
+                          "latestVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                          },
+                          "updateAvailable": {
+                            "type": "boolean"
+                          },
+                          "lastUpdate": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "fromVersion": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                              },
+                              "toVersion": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "applied",
+                                  "rolled_back",
+                                  "failed"
+                                ]
+                              },
+                              "reason": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "fromVersion",
+                              "toVersion",
+                              "status",
+                              "reason",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5443,7 +5748,12 @@
                           "capabilities",
                           "status",
                           "lastSeenAt",
-                          "revokedAt"
+                          "revokedAt",
+                          "pinnedVersion",
+                          "autoUpdate",
+                          "latestVersion",
+                          "updateAvailable",
+                          "lastUpdate"
                         ]
                       }
                     },
@@ -5480,6 +5790,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5563,6 +5875,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5597,6 +5911,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5715,6 +6031,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5749,6 +6067,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5826,6 +6146,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5860,6 +6182,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5922,6 +6246,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -5956,6 +6282,1095 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/releases": {
+      "post": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "releasePublish": []
+          }
+        ],
+        "summary": "Publish a signed runner release; a repeat publish updates the same version",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "manifest": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "signature": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9+/]{86}==$"
+                  }
+                },
+                "required": [
+                  "manifest",
+                  "signature"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release republished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "stable",
+                        "beta"
+                      ]
+                    },
+                    "protocolVersion": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "yanked": {
+                      "type": "boolean"
+                    },
+                    "manifest": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "signature": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9+/]{86}==$"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "channel",
+                    "protocolVersion",
+                    "publishedAt",
+                    "yanked",
+                    "manifest",
+                    "signature",
+                    "notes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Release published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "stable",
+                        "beta"
+                      ]
+                    },
+                    "protocolVersion": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "yanked": {
+                      "type": "boolean"
+                    },
+                    "manifest": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "signature": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9+/]{86}==$"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "channel",
+                    "protocolVersion",
+                    "publishedAt",
+                    "yanked",
+                    "manifest",
+                    "signature",
+                    "notes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The manifest, its signature or its size is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Wrong publish token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Release publishing or the release key is not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/releases/{version}/yank": {
+      "post": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "releasePublish": []
+          }
+        ],
+        "summary": "Yank or un-yank a release",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+            },
+            "required": true,
+            "name": "version",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "yanked": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "yanked"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Release yanked or restored"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Wrong publish token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown release",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Release publishing or the release key is not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runners/update": {
+      "get": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "runnerToken": []
+          }
+        ],
+        "summary": "Resolve the update for the authenticated runner",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "current",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stable",
+                "beta"
+              ]
+            },
+            "required": false,
+            "name": "channel",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update decision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "stable",
+                        "beta"
+                      ]
+                    },
+                    "latestVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "pinnedVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    },
+                    "autoUpdate": {
+                      "type": "boolean"
+                    },
+                    "manifest": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "signature": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9+/]{86}==$"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "available",
+                    "channel",
+                    "latestVersion",
+                    "pinnedVersion",
+                    "autoUpdate"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown or revoked runner token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runners/update/artifact/{fileName}": {
+      "get": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "runnerToken": []
+          }
+        ],
+        "summary": "Stream a release artifact verified against the signed manifest",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "required": true,
+            "name": "fileName",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact bytes with Content-Length and a sha-256 Digest",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown or revoked runner token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or yanked artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The artifact source failed, timed out or returned other bytes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runners/update/report": {
+      "post": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "runnerToken": []
+          }
+        ],
+        "summary": "Record an applied, rolled-back or failed runner update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fromVersion": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                  },
+                  "toVersion": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "applied",
+                      "rolled_back",
+                      "failed"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fromVersion",
+                  "toVersion",
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Update report recorded"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown or revoked runner token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runners/{id}/update-policy": {
+      "put": {
+        "tags": [
+          "runners"
+        ],
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Pin a runner version or disable auto-update",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pinnedVersion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                  },
+                  "autoUpdate": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "pinnedVersion",
+                  "autoUpdate"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Update policy changed"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
+                        "INTERNAL"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "details": {}
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Runner is revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_REQUIRED",
+                        "FORBIDDEN",
+                        "VALIDATION",
+                        "CONFLICT",
+                        "NOT_FOUND",
+                        "LIMIT",
+                        "RUNNER_OFFLINE",
+                        "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6121,6 +7536,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6155,6 +7572,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6305,6 +7724,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6339,6 +7760,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6373,6 +7796,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6754,6 +8179,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6788,6 +8215,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6908,6 +8337,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6942,6 +8373,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -6976,6 +8409,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7010,6 +8445,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7336,6 +8773,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7370,6 +8809,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7404,6 +8845,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7438,6 +8881,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7472,6 +8917,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7599,6 +9046,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7633,6 +9082,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7667,6 +9118,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7821,6 +9274,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7855,6 +9310,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7889,6 +9346,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -7923,6 +9382,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8050,6 +9511,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8084,6 +9547,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8118,6 +9583,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8330,6 +9797,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8364,6 +9833,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8557,6 +10028,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8591,6 +10064,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8722,6 +10197,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8756,6 +10233,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8958,6 +10437,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -8992,6 +10473,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9594,6 +11077,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9628,6 +11113,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9676,6 +11163,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9774,6 +11263,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9808,6 +11299,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9957,6 +11450,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9991,6 +11486,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -10025,6 +11522,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -10153,6 +11652,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -10187,6 +11688,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -10221,6 +11724,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -10279,6 +11784,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },

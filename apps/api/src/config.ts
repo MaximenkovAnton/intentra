@@ -21,6 +21,10 @@ const EnvSchema = z.object({
   MEMORY_EMBEDDING_MODEL: z.string().min(1).default('bge-m3'),
   MEMORY_INTERNAL_TOKEN: z.string().min(16).optional(),
   MEMORY_OUTBOX_INTERVAL_MS: z.coerce.number().int().min(1_000).default(5_000),
+  RELEASE_PUBLISH_TOKEN: z.string().min(16).optional(),
+  RELEASE_CACHE_DIR: z.string().min(1).default('/data/releases'),
+  RELEASE_MAX_ARTIFACT_BYTES: z.coerce.number().int().min(1).default(268_435_456),
+  GITHUB_RELEASE_TOKEN: z.string().min(1).optional(),
 });
 
 export class ConfigError extends Error {
@@ -48,6 +52,13 @@ export interface MemoryConfig {
   readonly outboxIntervalMs: number;
 }
 
+export interface ReleaseConfig {
+  readonly publishToken: string | null;
+  readonly cacheDir: string;
+  readonly maxArtifactBytes: number;
+  readonly githubToken: string | null;
+}
+
 export interface AppConfig {
   readonly nodeEnv: 'development' | 'test' | 'production';
   readonly host: string;
@@ -60,6 +71,7 @@ export interface AppConfig {
   readonly logLevel: string;
   readonly cookieSecure: boolean;
   readonly memory: MemoryConfig;
+  readonly release: ReleaseConfig;
 }
 
 const GRAPH_NAME = 'intentra';
@@ -77,6 +89,13 @@ const memoryConfig = (value: z.infer<typeof EnvSchema>): MemoryConfig => ({
   timeoutMs: MEMORY_TIMEOUT_MS,
   internalToken: value.MEMORY_INTERNAL_TOKEN ?? null,
   outboxIntervalMs: value.MEMORY_OUTBOX_INTERVAL_MS,
+});
+
+const releaseConfig = (value: z.infer<typeof EnvSchema>): ReleaseConfig => ({
+  publishToken: value.RELEASE_PUBLISH_TOKEN ?? null,
+  cacheDir: value.RELEASE_CACHE_DIR,
+  maxArtifactBytes: value.RELEASE_MAX_ARTIFACT_BYTES,
+  githubToken: value.GITHUB_RELEASE_TOKEN ?? null,
 });
 
 const DEV_SESSION_SECRET = 'intentra-development-session-secret-000000';
@@ -118,6 +137,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       logLevel: value.LOG_LEVEL,
       cookieSecure: isProduction,
       memory: memoryConfig(value),
+      release: releaseConfig(value),
     };
   }
 
@@ -149,5 +169,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     logLevel: value.LOG_LEVEL,
     cookieSecure: isProduction,
     memory: memoryConfig(value),
+    release: releaseConfig(value),
   };
 }

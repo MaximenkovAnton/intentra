@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { and, asc, eq, gt, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import {
   ApiErrorSchema,
   RegisterRunnerInputSchema,
@@ -12,7 +12,7 @@ import {
 } from '@intentra/contracts';
 import type { AppDeps } from '../deps.js';
 import type { Guards } from '../auth/rbac.js';
-import { currentProject, currentUser } from '../auth/rbac.js';
+import { canManageRunner, currentProject, currentUser } from '../auth/rbac.js';
 import { HttpError } from '../errors.js';
 import { toRunnerDto } from '../dto.js';
 import { generateToken, hashToken } from '../auth/session.js';
@@ -21,15 +21,13 @@ import {
   projectMembers,
   projectRunners,
   runnerRegistrationTokens,
+  runnerUpdateEvents,
   runners,
-  type RunnerRow,
+  type RunnerUpdateEventRow,
 } from '../db/schema.js';
 import { recordAudit } from '../services/audit.js';
 
 const REGISTRATION_TTL_MS = 15 * 60 * 1000;
-
-const canManageRunner = (runner: RunnerRow, user: { id: string; isAdmin: boolean }): boolean =>
-  user.isAdmin || runner.ownerUserId === user.id;
 
 export function registerRunnerRoutes(app: FastifyInstance, deps: AppDeps, guards: Guards): void {
   const typed = app.withTypeProvider<ZodTypeProvider>();
@@ -180,10 +178,34 @@ export function registerRunnerRoutes(app: FastifyInstance, deps: AppDeps, guards
             .orderBy(asc(runners.id))
             .limit(limit + 1);
       const { page, nextCursor } = pageOf(rows, limit, (row) => encodeIdCursor(row.runner.id));
-      return {
-        items: page.map((row) => toRunnerDto(row.runner)),
-        nextCursor,
-      };
+      const runnerIds = page.map((row) => row.runner.id);
+      const events =
+        runnerIds.length === 0
+          ? []
+          : await deps.db
+              .select()
+              .from(runnerUpdateEvents)
+              .where(inArray(runnerUpdateEvents.runnerId, runnerIds))
+              .orderBy(desc(runnerUpdateEvents.createdAt));
+      const lastUpdateByRunner = new Map<string, RunnerUpdateEventRow>();
+      for (const event of events) {
+        if (!lastUpdateByRunner.has(event.runnerId)) lastUpdateByRunner.set(event.runnerId, event);
+      }
+      const items = await Promise.all(
+        page.map(async (row) => {
+          const update = await deps.releases.resolveUpdate({
+            runner: row.runner,
+            channel: 'stable',
+            current: null,
+          });
+          return toRunnerDto(row.runner, {
+            latestVersion: update.latestVersion,
+            updateAvailable: update.available,
+            lastUpdate: lastUpdateByRunner.get(row.runner.id) ?? null,
+          });
+        }),
+      );
+      return { items, nextCursor };
     },
   );
 

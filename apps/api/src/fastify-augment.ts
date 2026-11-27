@@ -1,4 +1,4 @@
-import type { IntentRow, ProjectRow } from './db/schema.js';
+import type { IntentRow, ProjectRow, RunnerRow } from './db/schema.js';
 import type { AuthUser } from './auth/session.js';
 import type { Orchestrator } from './orchestrator/service.js';
 
@@ -11,5 +11,6 @@ declare module 'fastify' {
     user: AuthUser | null;
     project: ProjectRow | null;
     intent: IntentRow | null;
+    runner: RunnerRow | null;
   }
 }
