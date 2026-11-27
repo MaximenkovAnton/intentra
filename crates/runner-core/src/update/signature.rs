@@ -1,17 +1,13 @@
 use ed25519_dalek::{Signature, VerifyingKey};
 
-use super::{UpdateError, base64};
+use super::{UpdateError, base64, decode_key_bytes};
 
 pub fn verify_manifest(
     manifest_bytes: &[u8],
     signature_b64: &str,
     pubkey_b64: &str,
 ) -> Result<(), UpdateError> {
-    let key_bytes = base64::decode(pubkey_b64.trim(), "pubkey")?;
-    let key_array: [u8; 32] = key_bytes
-        .as_slice()
-        .try_into()
-        .map_err(|_| UpdateError::KeyInvalid)?;
+    let key_array = decode_key_bytes(pubkey_b64)?;
     verify_manifest_with_key(manifest_bytes, signature_b64, &key_array)
 }
 
@@ -33,6 +29,7 @@ mod tests {
     use ed25519_dalek::SigningKey;
 
     use super::*;
+    use crate::update::PLACEHOLDER_PUBKEY;
     use crate::update::fixtures;
 
     fn base64_encode(bytes: &[u8]) -> String {
@@ -70,6 +67,18 @@ mod tests {
             ),
             Ok(())
         );
+    }
+
+    #[test]
+    fn verify_manifest_rejects_the_placeholder_key() {
+        assert!(matches!(
+            verify_manifest(
+                fixtures::MANIFEST_JSON.as_bytes(),
+                fixtures::MANIFEST_SIG.trim(),
+                PLACEHOLDER_PUBKEY,
+            ),
+            Err(UpdateError::PlaceholderKey)
+        ));
     }
 
     #[test]

@@ -2,14 +2,16 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::watch;
+use tokio::sync::{Notify, watch};
 
 use crate::config::UpdateConfig;
 use crate::job::JobManager;
-use crate::update::apply::{ApplyOutcome, ApplyRequest, Installer, Restarter, apply_release};
+use crate::update::apply::{
+    ApplyOutcome, ApplyRequest, Installer, Restarter, apply_release, report_outcome,
+};
 use crate::update::client::{UpdateClient, UpdateReport, UpdateStatus};
-use crate::update::public_key;
 use crate::update::state::{PendingUpdate, UpdateState};
+use crate::update::{public_key, sanitize_for_log};
 
 fn random_sample() -> f64 {
     let mut bytes = [0u8; 8];
@@ -31,6 +33,7 @@ pub struct UpdateDaemon {
     pub jobs: Arc<JobManager>,
     pub installer: Arc<dyn Installer>,
     pub restarter: Arc<dyn Restarter>,
+    pub waiting_for_hello: Option<Arc<Notify>>,
 }
 
 impl UpdateDaemon {
@@ -53,15 +56,6 @@ fn pending_for_current(daemon: &UpdateDaemon) -> Option<PendingUpdate> {
     }
 }
 
-pub async fn report_outcome(client: &UpdateClient, outcome: Option<&ApplyOutcome>) {
-    let Some(report) = outcome.and_then(ApplyOutcome::report) else {
-        return;
-    };
-    if let Err(error) = client.report(report).await {
-        tracing::warn!(error = %error, "could not report the update outcome to the center");
-    }
-}
-
 pub async fn check_once(daemon: &UpdateDaemon) -> Option<ApplyOutcome> {
     if !daemon.jobs.begin_update() {
         tracing::info!("deferring the update check while a job is active");
@@ -73,38 +67,43 @@ pub async fn check_once(daemon: &UpdateDaemon) -> Option<ApplyOutcome> {
         .await
     {
         Ok(update) if update.available => {
-            let request = ApplyRequest {
-                client: &daemon.client,
-                update: &daemon.update,
-                current_version: &daemon.current_version,
-                state_dir: &daemon.state_dir,
-                installer: daemon.installer.as_ref(),
-                restarter: Some(daemon.restarter.as_ref()),
-            };
-            let outcome = apply_release(&request, &update).await;
-            match &outcome {
-                ApplyOutcome::Applied { version } => tracing::info!(
-                    from = %daemon.current_version,
-                    to = %version,
-                    channel = %daemon.update.channel.as_str(),
-                    "installed an update"
-                ),
-                ApplyOutcome::Failed(report) => tracing::warn!(
-                    from = %report.from_version,
-                    to = %report.to_version,
-                    channel = %daemon.update.channel.as_str(),
-                    reason = report.reason.as_deref().unwrap_or_default(),
-                    "the update failed"
-                ),
-                ApplyOutcome::RolledBack(report) => tracing::warn!(
-                    from = %report.from_version,
-                    to = %report.to_version,
-                    channel = %daemon.update.channel.as_str(),
-                    reason = report.reason.as_deref().unwrap_or_default(),
-                    "the update rolled back"
-                ),
+            if let Some(reason) = update.apply_blocker() {
+                tracing::info!(reason = %reason, "not applying an available update");
+                None
+            } else {
+                let request = ApplyRequest {
+                    client: &daemon.client,
+                    update: &daemon.update,
+                    current_version: &daemon.current_version,
+                    state_dir: &daemon.state_dir,
+                    installer: daemon.installer.as_ref(),
+                    restarter: Some(daemon.restarter.as_ref()),
+                };
+                let outcome = apply_release(&request, &update).await;
+                match &outcome {
+                    ApplyOutcome::Applied { version } => tracing::info!(
+                        from = %daemon.current_version,
+                        to = %version,
+                        channel = %daemon.update.channel.as_str(),
+                        "installed an update"
+                    ),
+                    ApplyOutcome::Failed(report) => tracing::warn!(
+                        from = %report.from_version,
+                        to = %report.to_version,
+                        channel = %daemon.update.channel.as_str(),
+                        reason = %sanitize_for_log(report.reason.as_deref().unwrap_or_default()),
+                        "the update failed"
+                    ),
+                    ApplyOutcome::RolledBack(report) => tracing::warn!(
+                        from = %report.from_version,
+                        to = %report.to_version,
+                        channel = %daemon.update.channel.as_str(),
+                        reason = %sanitize_for_log(report.reason.as_deref().unwrap_or_default()),
+                        "the update rolled back"
+                    ),
+                }
+                Some(outcome)
             }
-            Some(outcome)
         }
         Ok(_) => {
             tracing::info!(current = %daemon.current_version, "the runner is up to date");
@@ -116,7 +115,11 @@ pub async fn check_once(daemon: &UpdateDaemon) -> Option<ApplyOutcome> {
         }
     };
     daemon.jobs.end_update();
-    report_outcome(&daemon.client, outcome.as_ref()).await;
+    report_outcome(
+        Some(&daemon.client),
+        outcome.as_ref().and_then(ApplyOutcome::report),
+    )
+    .await;
     if let Some(ApplyOutcome::RolledBack(_)) = &outcome
         && let Err(error) = daemon.restarter.restart()
     {
@@ -199,6 +202,9 @@ pub async fn run(
     }
     if !automatic && pending_for_current(&daemon).is_none() {
         return;
+    }
+    if let Some(signal) = &daemon.waiting_for_hello {
+        signal.notify_one();
     }
     if !wait_for_hello(&mut hello, &mut shutdown).await {
         return;
@@ -333,12 +339,27 @@ mod tests {
         }
 
         async fn wait_for(&self, count: usize) {
-            loop {
-                if self.requests.lock().unwrap().len() >= count {
-                    return;
+            self.wait_for_until(count, Duration::from_secs(5))
+                .await
+                .unwrap();
+        }
+
+        async fn wait_for_until(&self, count: usize, timeout: Duration) -> Result<(), String> {
+            tokio::time::timeout(timeout, async {
+                loop {
+                    if self.requests.lock().unwrap().len() >= count {
+                        return;
+                    }
+                    self.notify.notified().await;
                 }
-                self.notify.notified().await;
-            }
+            })
+            .await
+            .map_err(|_| {
+                format!(
+                    "timed out after {timeout:?} waiting for a request: {} of {count}",
+                    self.requests().len()
+                )
+            })
         }
     }
 
@@ -453,6 +474,14 @@ mod tests {
     }
 
     async fn setup(stub: &StubCenter, update: UpdateConfig) -> Harness {
+        setup_with_signal(stub, update, None).await
+    }
+
+    async fn setup_with_signal(
+        stub: &StubCenter,
+        update: UpdateConfig,
+        waiting_for_hello: Option<Arc<Notify>>,
+    ) -> Harness {
         let root = tempfile::tempdir().unwrap();
         let state_dir = root.path().join(".intentra");
         std::fs::create_dir_all(&state_dir).unwrap();
@@ -483,6 +512,7 @@ mod tests {
             jobs: Arc::clone(&jobs),
             installer: installer.clone(),
             restarter: restarter.clone(),
+            waiting_for_hello,
         });
         Harness {
             _root: root,
@@ -881,19 +911,76 @@ mod tests {
         let _lock = fixtures::lock_env();
         let _env = fixtures::TestPubkeyEnv::set();
         let stub = stub_center(unavailable_update(), Vec::new(), 204).await;
-        let harness = setup(&stub, enabled()).await;
+        let signal = Arc::new(Notify::new());
+        let harness = setup_with_signal(&stub, enabled(), Some(Arc::clone(&signal))).await;
         let (hello_tx, hello_rx) = watch::channel(false);
         let (shutdown_tx, shutdown_rx) = watch::channel(false);
         let run = tokio::spawn(run(Arc::clone(&harness.daemon), hello_rx, shutdown_rx));
-        tokio::time::sleep(Duration::from_millis(300)).await;
-        assert_eq!(stub.requests().len(), 0);
+        tokio::time::timeout(Duration::from_secs(5), signal.notified())
+            .await
+            .expect("the daemon reaches the hello wait");
+        assert_eq!(
+            stub.requests().len(),
+            0,
+            "no update request may run before the first hello"
+        );
         hello_tx.send(true).unwrap();
-        stub.wait_for(1).await;
+        stub.wait_for_until(1, Duration::from_secs(5))
+            .await
+            .unwrap();
         assert_eq!(stub.requests().len(), 1);
+        assert!(stub.requests()[0].path.starts_with("/api/runners/update?"));
         shutdown_tx.send(true).unwrap();
         tokio::time::timeout(Duration::from_secs(5), run)
             .await
             .unwrap()
             .unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn stub_wait_for_returns_on_timeout() {
+        let stub = stub_center(unavailable_update(), Vec::new(), 204).await;
+        let started = tokio::time::Instant::now();
+        let error = stub
+            .wait_for_until(1, Duration::from_millis(50))
+            .await
+            .unwrap_err();
+        assert!(error.contains("0 of 1"), "{error}");
+        assert_eq!(
+            tokio::time::Instant::now() - started,
+            Duration::from_millis(50)
+        );
+    }
+
+    #[tokio::test]
+    async fn defers_a_release_when_auto_update_is_disabled() {
+        let _lock = fixtures::lock_env();
+        let _env = fixtures::TestPubkeyEnv::set();
+        let archive = release_archive();
+        let spec = ReleaseSpec::for_archive("0.3.0", &archive);
+        let mut update = signed_update(&spec, &archive);
+        update["autoUpdate"] = json!(false);
+        update["pinnedVersion"] = json!("0.3.0");
+        update["latestVersion"] = json!("0.3.0");
+        let stub = stub_center(update, archive, 204).await;
+        let harness = setup(&stub, enabled()).await;
+        let outcome = check_once(&harness.daemon).await;
+        assert_eq!(outcome, None);
+        assert_eq!(stub.update_requests(), 1);
+        assert_eq!(stub.artifact_requests(), 0);
+        assert_eq!(stub.reports().len(), 0);
+        assert_eq!(harness.installer.calls(), 0);
+        assert_eq!(harness.installer.backups(), 0);
+        assert_eq!(
+            UpdateState::load(&harness.state_dir)
+                .unwrap()
+                .and_then(|state| state.pending),
+            None
+        );
+        assert!(
+            harness.jobs.begin_update(),
+            "the update gate must be released"
+        );
+        harness.jobs.end_update();
     }
 }

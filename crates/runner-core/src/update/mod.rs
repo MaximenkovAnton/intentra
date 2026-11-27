@@ -32,6 +32,10 @@ pub fn embedded_public_key() -> &'static str {
 }
 
 pub fn decode_public_key(b64: &str) -> Result<[u8; 32], UpdateError> {
+    decode_key_bytes(b64)
+}
+
+pub(crate) fn decode_key_bytes(b64: &str) -> Result<[u8; 32], UpdateError> {
     let value = b64.trim();
     if value == PLACEHOLDER_PUBKEY {
         return Err(UpdateError::PlaceholderKey);
@@ -41,6 +45,20 @@ pub fn decode_public_key(b64: &str) -> Result<[u8; 32], UpdateError> {
         .as_slice()
         .try_into()
         .map_err(|_| UpdateError::KeyInvalid)
+}
+
+pub fn sanitize_for_log(value: &str) -> String {
+    use std::fmt::Write;
+
+    let mut output = String::with_capacity(value.len());
+    for character in value.chars() {
+        if character.is_control() {
+            let _ = write!(output, "\\u{{{:x}}}", character as u32);
+        } else {
+            output.push(character);
+        }
+    }
+    output
 }
 
 pub fn public_key() -> Result<[u8; 32], UpdateError> {
@@ -170,6 +188,14 @@ mod tests {
             decode_public_key(PLACEHOLDER_PUBKEY),
             Err(UpdateError::PlaceholderKey)
         ));
+    }
+
+    #[test]
+    fn sanitize_for_log_escapes_control_characters() {
+        let output = sanitize_for_log("a\u{1b}]0;pwned\u{7}b\u{9b}c\u{7f}");
+        assert_eq!(output, "a\\u{1b}]0;pwned\\u{7}b\\u{9b}c\\u{7f}");
+        assert!(!output.chars().any(char::is_control));
+        assert_eq!(sanitize_for_log("plain text"), "plain text");
     }
 
     #[cfg(debug_assertions)]

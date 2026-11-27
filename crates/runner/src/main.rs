@@ -7,10 +7,11 @@ use intentra_runner_core::state::RunnerState;
 use intentra_runner_core::transport::{self, ClientConfig};
 use intentra_runner_core::update::apply::{
     ApplyRequest, ProcessRestarter, ReconcileRequest, SelfReplaceInstaller, apply_release,
-    reconcile_pending,
+    reconcile_pending, report_outcome,
 };
 use intentra_runner_core::update::client::UpdateClient;
 use intentra_runner_core::update::daemon::{self as update_daemon, UpdateDaemon};
+use intentra_runner_core::update::sanitize_for_log;
 use intentra_runner_core::update::state::UpdateState;
 use intentra_runner_core::{
     EXIT_AUTH, EXIT_CONFIG, EXIT_FAILURE, EXIT_NOT_RUNNING, EXIT_OK, config, mcp, register, token,
@@ -272,6 +273,7 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
             jobs: std::sync::Arc::clone(&jobs),
             installer: std::sync::Arc::new(SelfReplaceInstaller),
             restarter: std::sync::Arc::new(ProcessRestarter::new(state_dir.clone())),
+            waiting_for_hello: None,
         });
         tokio::spawn(update_daemon::run(daemon, hello_rx, shutdown_rx.clone()));
     }
@@ -479,6 +481,10 @@ async fn command_update(apply: bool, config_flag: Option<PathBuf>) -> i32 {
         );
         return EXIT_OK;
     }
+    if let Some(reason) = update.apply_blocker() {
+        eprintln!("update: {reason}");
+        return EXIT_FAILURE;
+    }
     let installer = SelfReplaceInstaller;
     let request = ApplyRequest {
         client: &client,
@@ -489,11 +495,7 @@ async fn command_update(apply: bool, config_flag: Option<PathBuf>) -> i32 {
         restarter: None,
     };
     let outcome = apply_release(&request, &update).await;
-    if let Some(report) = outcome.report()
-        && let Err(error) = client.report(report).await
-    {
-        tracing::warn!(error = %error, "could not report the update outcome to the center");
-    }
+    report_outcome(Some(&client), outcome.report()).await;
     match outcome {
         intentra_runner_core::update::apply::ApplyOutcome::Applied { version } => {
             println!(
@@ -507,7 +509,7 @@ async fn command_update(apply: bool, config_flag: Option<PathBuf>) -> i32 {
                 .report()
                 .and_then(|report| report.reason.clone())
                 .unwrap_or_else(|| "the update failed".to_string());
-            eprintln!("update: {reason}");
+            eprintln!("update: {}", sanitize_for_log(&reason));
             EXIT_FAILURE
         }
     }

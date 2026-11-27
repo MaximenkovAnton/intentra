@@ -475,6 +475,56 @@ fn update_apply_refuses_while_the_daemon_is_running() {
 }
 
 #[test]
+fn update_apply_refuses_when_auto_update_is_disabled() {
+    let dir = tempfile::tempdir().unwrap();
+    let token = dir.path().join("token");
+    write_token(&token);
+    let copied = dir
+        .path()
+        .join(format!("runner-copy{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(binary(), &copied).unwrap();
+    let copied = copied.canonicalize().unwrap();
+    let original = std::fs::read(&copied).unwrap();
+    let update = json!({
+        "available": true,
+        "channel": "stable",
+        "latestVersion": "0.3.0",
+        "pinnedVersion": null,
+        "autoUpdate": false,
+        "manifest": FIXTURE_MANIFEST,
+        "signature": FIXTURE_SIGNATURE.trim(),
+    });
+    let (addr, server) = serve_http(vec![(
+        200,
+        "application/json",
+        serde_json::to_vec(&update).unwrap(),
+    )]);
+    let config = write_update_config(dir.path(), &token, &format!("ws://{addr}"));
+    let output = Command::new(&copied)
+        .args(["update", "--apply", "--config"])
+        .arg(&config)
+        .output()
+        .unwrap();
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains(
+            "update: auto-updates are disabled for this runner (autoUpdate=false); enable auto-update in the centre before applying"
+        ),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(std::fs::read(&copied).unwrap(), original);
+    let requests = server.join().unwrap();
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].starts_with("GET /api/runners/update?"));
+}
+
+#[test]
 fn update_apply_replaces_the_binary() {
     let dir = tempfile::tempdir().unwrap();
     let token = dir.path().join("token");
