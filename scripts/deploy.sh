@@ -59,10 +59,10 @@ echo "==> running migrations"
 docker compose run --rm migrate
 
 echo "==> rolling out api"
-docker rollout api -t 180
+docker rollout api -t 180 --wait-after-healthy 10
 
 echo "==> rolling out web"
-docker rollout web -t 120
+docker rollout web -t 120 --wait-after-healthy 10
 
 PORT=$(docker compose port ingress 8080 | head -n 1 | sed 's/.*://')
 [ -n "$PORT" ] || die "ingress is not running; complete the first cutover in docs/operations/deploy.md"

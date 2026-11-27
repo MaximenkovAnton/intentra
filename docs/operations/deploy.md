@@ -15,6 +15,11 @@ proxy. `docker-rollout` doubles a service (`--scale`), waits for the new contain
 healthy, then stops and removes the old one. `api` and `web` publish no host ports and have no
 `container_name`, which is what makes them rollable.
 
+Both proxies deliberately omit the upstream `keepalive` and set `proxy_connect_timeout 1s`: a
+pooled idle connection to a container that was just removed does not fail cleanly, while a fresh
+connect that times out after one second is retried on the resolved healthy peer instead of hanging
+the request for the kernel's ARP timeout.
+
 ## One-time setup
 
 ```bash
@@ -46,6 +51,10 @@ runtime `api` resolver. Recreating whatever `intentra-web:local` already points 
 old static upstream, and the first `docker rollout api` would answer `/api` from the removed api
 container's address until web was rolled.
 
+The cutover is longer than the ingress-only update below: on 2026-11-27 it measured **11.5 s**
+wall time (11.15 s of probe samples), because compose recreates the old `web` that published 8090
+and only then starts `ingress` on that port.
+
 After the cutover, `docker compose up -d --build` is no longer the deployment path: it recreates
 containers in place and drops traffic.
 
@@ -66,8 +75,11 @@ From `infra/compose` (where the cutover leaves you), the script is two levels up
 2. `docker compose build api web ingress` with `INTENTRA_GIT_REVISION=$(git rev-parse HEAD)`
    (the runtime image carries `org.opencontainers.image.revision`);
 3. `docker compose run --rm migrate` — migrations run before any new api container serves;
-4. `docker rollout api -t 180` — old api is removed only after the new one is healthy;
-5. `docker rollout web -t 120`;
+4. `docker rollout api -t 180 --wait-after-healthy 10` — the new api is healthy before the old
+   one is touched, and the old one keeps serving for 10 more seconds so that `web` re-resolves the
+   new container (resolver TTL is 5 s) while both are still up; without that wait the removed
+   address stays in web's upstream for up to 8 s and `/api` answers 502;
+5. `docker rollout web -t 120 --wait-after-healthy 10` — the same wait for `ingress` → `web`;
 6. verification: `http://127.0.0.1:${WEB_PORT:-8090}/healthz` returns 200, the same origin's
    `/api/auth/me` returns 401 — api answers it through web, so a stale web→api upstream fails the
    deploy instead of passing on web's static `healthz`; every running api and web container
@@ -95,11 +107,15 @@ Expect a short interruption while the ingress container is recreated.
 
 ## Checks after a deployment
 
+Run these with `set -eu`: the `[ ... = ... ]` comparisons exit non-zero on a wrong code, whereas
+`curl ...; echo ok` always exits 0 and proves nothing.
+
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' <public-url>/healthz      # 200
-curl -s -o /dev/null -w '%{http_code}\n' <public-url>/             # 200
-curl -s -o /dev/null -w '%{http_code}\n' <public-url>/api/auth/me  # 401 without a session
-cd infra/compose && docker compose ps
+set -eu
+[ "$(curl -s -o /dev/null -w '%{http_code}' <public-url>/healthz)" = 200 ]
+[ "$(curl -s -o /dev/null -w '%{http_code}' <public-url>/)" = 200 ]
+[ "$(curl -s -o /dev/null -w '%{http_code}' <public-url>/api/auth/me)" = 401 ]
+cd infra/compose && docker compose ps -a
 docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' \
   $(docker compose ps -q api)
 ```
