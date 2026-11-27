@@ -861,8 +861,8 @@ mod tests {
         .unwrap();
         assert_eq!(stub.requests().len(), 0);
 
-        let lock = fixtures::lock_env();
-        fixtures::TestPubkeyEnv::clear();
+        let _lock = fixtures::lock_env();
+        let _unkeyed = fixtures::TestPubkeyEnv::set_placeholder();
         let unkeyed_stub = stub_center(unavailable_update(), Vec::new(), 204).await;
         let unkeyed_harness = setup(&unkeyed_stub, enabled()).await;
         let (_hello_tx, hello_rx) = watch::channel(false);
@@ -874,7 +874,6 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(unkeyed_stub.requests().len(), 0);
-        drop(lock);
     }
 
     #[tokio::test]

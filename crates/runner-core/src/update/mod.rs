@@ -87,7 +87,15 @@ pub(crate) mod fixtures {
 
     impl TestPubkeyEnv {
         pub fn set() -> TestPubkeyEnv {
-            unsafe { std::env::set_var("INTENTRA_UPDATE_PUBKEY", TEST_PUB.trim()) };
+            Self::set_value(TEST_PUB.trim())
+        }
+
+        pub fn set_placeholder() -> TestPubkeyEnv {
+            Self::set_value(super::PLACEHOLDER_PUBKEY)
+        }
+
+        fn set_value(value: &str) -> TestPubkeyEnv {
+            unsafe { std::env::set_var("INTENTRA_UPDATE_PUBKEY", value) };
             TestPubkeyEnv
         }
 
@@ -195,11 +203,10 @@ mod tests {
 
     #[test]
     fn embedded_key_is_a_raw_32_byte_key() {
-        let embedded =
-            base64::decode(embedded_public_key().trim(), "pubkey").expect("embedded key decodes");
-        assert_eq!(embedded.len(), 32);
+        let embedded = decode_public_key(embedded_public_key())
+            .expect("the embedded release public key decodes");
         let test_pub =
             base64::decode(fixtures::TEST_PUB.trim(), "pubkey").expect("test key decodes");
-        assert_ne!(embedded, test_pub);
+        assert_ne!(embedded.as_slice(), test_pub.as_slice());
     }
 }
