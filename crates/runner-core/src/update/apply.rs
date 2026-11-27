@@ -39,13 +39,53 @@ pub trait Installer: Send + Sync {
     fn rollback(&self) -> Result<(), ApplyError>;
 }
 
+/// `current_exe()` reads `/proc/self/exe`, which the kernel marks with a
+/// ` (deleted)` suffix once `self-replace` has renamed the new binary over the
+/// running one; the path without that suffix still names the new executable.
+#[cfg(unix)]
+fn without_deleted_suffix(exe: PathBuf) -> PathBuf {
+    match exe.to_str() {
+        Some(text) => match text.strip_suffix(" (deleted)") {
+            Some(trimmed) => PathBuf::from(trimmed),
+            None => exe,
+        },
+        None => exe,
+    }
+}
+
+fn current_executable() -> Result<PathBuf, ApplyError> {
+    let exe = std::env::current_exe()?;
+    #[cfg(unix)]
+    let exe = without_deleted_suffix(exe);
+    let exe = exe.canonicalize().unwrap_or(exe);
+    Ok(crate::util::strip_verbatim(exe))
+}
+
+/// `self-replace` resolves `current_exe()` again, which is already marked
+/// ` (deleted)` after the first replace, so a rollback in the same process
+/// cannot use it on unix; a temp file next to the executable is renamed over it.
+#[cfg(unix)]
+fn replace_file(exe: &Path, replacement: &Path) -> Result<(), ApplyError> {
+    let parent = exe.parent().ok_or_else(|| {
+        ApplyError::Install("the runner executable has no parent directory".to_string())
+    })?;
+    let name = exe
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("intentra-runner");
+    let temp = parent.join(format!(".{name}.replace"));
+    let permissions = std::fs::metadata(exe)?.permissions();
+    std::fs::copy(replacement, &temp)?;
+    std::fs::set_permissions(&temp, permissions)?;
+    std::fs::rename(&temp, exe)?;
+    Ok(())
+}
+
 pub struct SelfReplaceInstaller;
 
 impl SelfReplaceInstaller {
     fn binary_path() -> Result<PathBuf, ApplyError> {
-        let exe = std::env::current_exe()?;
-        let exe = exe.canonicalize()?;
-        Ok(crate::util::strip_verbatim(exe))
+        current_executable()
     }
 
     fn backup_path(exe: &Path) -> PathBuf {
@@ -62,6 +102,12 @@ impl Installer for SelfReplaceInstaller {
         Ok(())
     }
 
+    #[cfg(unix)]
+    fn install(&self, staged: &Path) -> Result<(), ApplyError> {
+        replace_file(&SelfReplaceInstaller::binary_path()?, staged)
+    }
+
+    #[cfg(windows)]
     fn install(&self, staged: &Path) -> Result<(), ApplyError> {
         self_replace::self_replace(staged).map_err(|error| ApplyError::Install(error.to_string()))
     }
@@ -72,7 +118,15 @@ impl Installer for SelfReplaceInstaller {
         if !backup.is_file() {
             return Err(ApplyError::NoBackup);
         }
-        self_replace::self_replace(&backup).map_err(|error| ApplyError::Install(error.to_string()))
+        #[cfg(unix)]
+        {
+            replace_file(&exe, &backup)
+        }
+        #[cfg(windows)]
+        {
+            self_replace::self_replace(&backup)
+                .map_err(|error| ApplyError::Install(error.to_string()))
+        }
     }
 }
 
@@ -98,7 +152,7 @@ impl ProcessRestarter {
 impl Restarter for ProcessRestarter {
     fn restart(&self) -> Result<(), ApplyError> {
         use std::os::unix::process::CommandExt;
-        let exe = std::env::current_exe()?;
+        let exe = current_executable()?;
         let args: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
         let error = std::process::Command::new(exe).args(args).exec();
         Err(ApplyError::Restart(error.to_string()))
@@ -795,6 +849,43 @@ mod tests {
     const ARCHIVE_BINARY: &str = "intentra-runner.exe";
 
     const BINARY_BYTES: &[u8] = b"#!/bin/sh\necho 0.2.0\n";
+
+    #[cfg(unix)]
+    #[test]
+    fn the_installer_replaces_the_running_file_through_a_temp_file() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("intentra-runner");
+        let replacement = dir.path().join("replacement");
+        std::fs::write(&exe, b"old").unwrap();
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::write(&replacement, b"new").unwrap();
+        replace_file(&exe, &replacement).unwrap();
+        assert_eq!(std::fs::read(&exe).unwrap(), b"new");
+        assert_eq!(
+            std::fs::metadata(&exe).unwrap().permissions().mode() & 0o777,
+            0o755
+        );
+        assert!(!dir.path().join(".intentra-runner.replace").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_executable_path_drops_the_deleted_suffix_after_a_replace() {
+        assert_eq!(
+            without_deleted_suffix(PathBuf::from("/opt/intentra-runner (deleted)")),
+            PathBuf::from("/opt/intentra-runner")
+        );
+        assert_eq!(
+            without_deleted_suffix(PathBuf::from("/opt/intentra-runner")),
+            PathBuf::from("/opt/intentra-runner")
+        );
+        assert_eq!(
+            without_deleted_suffix(PathBuf::from("/opt/runner (deleted) copy")),
+            PathBuf::from("/opt/runner (deleted) copy")
+        );
+    }
 
     #[test]
     fn extracts_the_runner_binary() {
