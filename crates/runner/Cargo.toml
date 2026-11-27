@@ -20,3 +20,12 @@ serde_json.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 tokio.workspace = true
+ed25519-dalek.workspace = true
+sha2.workspace = true
+
+[target.'cfg(unix)'.dev-dependencies]
+tar.workspace = true
+flate2.workspace = true
+
+[target.'cfg(windows)'.dev-dependencies]
+zip.workspace = true

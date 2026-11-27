@@ -1,9 +1,13 @@
+pub mod apply;
 pub mod base64;
+pub mod client;
+pub mod daemon;
 pub mod manifest;
 pub mod signature;
+pub mod state;
 
 pub use manifest::{RunnerUpdate, UpdateAsset, UpdateManifest, parse_manifest};
-pub use signature::verify_manifest;
+pub use signature::{verify_manifest, verify_manifest_with_key};
 
 pub const PLACEHOLDER_PUBKEY: &str = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
@@ -52,6 +56,8 @@ pub fn public_key() -> Result<[u8; 32], UpdateError> {
 
 #[cfg(test)]
 pub(crate) mod fixtures {
+    use std::sync::{Mutex, MutexGuard};
+
     pub const MANIFEST_JSON: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../fixtures/release/manifest.json"
@@ -64,26 +70,87 @@ pub(crate) mod fixtures {
         env!("CARGO_MANIFEST_DIR"),
         "/../../fixtures/release/test.pub"
     ));
+    pub const TEST_SEED: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../fixtures/release/test.seed"
+    ));
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    pub fn lock_env() -> MutexGuard<'static, ()> {
+        ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    pub struct TestPubkeyEnv;
+
+    impl TestPubkeyEnv {
+        pub fn set() -> TestPubkeyEnv {
+            unsafe { std::env::set_var("INTENTRA_UPDATE_PUBKEY", TEST_PUB.trim()) };
+            TestPubkeyEnv
+        }
+
+        pub fn clear() {
+            unsafe { std::env::remove_var("INTENTRA_UPDATE_PUBKEY") };
+        }
+    }
+
+    impl Drop for TestPubkeyEnv {
+        fn drop(&mut self) {
+            TestPubkeyEnv::clear();
+        }
+    }
+
+    pub fn base64_encode(bytes: &[u8]) -> String {
+        const ALPHABET: &[u8; 64] =
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut output = String::new();
+        for chunk in bytes.chunks(3) {
+            let first = u32::from(chunk[0]);
+            let second = u32::from(chunk.get(1).copied().unwrap_or(0));
+            let third = u32::from(chunk.get(2).copied().unwrap_or(0));
+            let value = (first << 16) | (second << 8) | third;
+            output.push(ALPHABET[(value >> 18 & 63) as usize] as char);
+            output.push(ALPHABET[(value >> 12 & 63) as usize] as char);
+            output.push(if chunk.len() > 1 {
+                ALPHABET[(value >> 6 & 63) as usize] as char
+            } else {
+                '='
+            });
+            output.push(if chunk.len() > 2 {
+                ALPHABET[(value & 63) as usize] as char
+            } else {
+                '='
+            });
+        }
+        output
+    }
+
+    pub fn sign(manifest_bytes: &[u8]) -> String {
+        use ed25519_dalek::Signer;
+
+        let seed = super::base64::decode(TEST_SEED.trim(), "seed").expect("test seed decodes");
+        let seed: [u8; 32] = seed.as_slice().try_into().expect("test seed is 32 bytes");
+        let key = ed25519_dalek::SigningKey::from_bytes(&seed);
+        base64_encode(&key.sign(manifest_bytes).to_bytes())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Mutex;
-
     use super::*;
 
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    struct CustomPubkeyEnv;
 
-    struct UpdatePubkeyEnv;
-
-    impl UpdatePubkeyEnv {
+    impl CustomPubkeyEnv {
         fn set(value: &str) -> Self {
             unsafe { std::env::set_var("INTENTRA_UPDATE_PUBKEY", value) };
-            UpdatePubkeyEnv
+            CustomPubkeyEnv
         }
     }
 
-    impl Drop for UpdatePubkeyEnv {
+    impl Drop for CustomPubkeyEnv {
         fn drop(&mut self) {
             unsafe { std::env::remove_var("INTENTRA_UPDATE_PUBKEY") };
         }
@@ -100,20 +167,16 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     fn debug_env_overrides_the_embedded_key() {
-        let _lock = ENV_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let _env = UpdatePubkeyEnv::set(fixtures::TEST_PUB.trim());
+        let _lock = fixtures::lock_env();
+        let _env = CustomPubkeyEnv::set(fixtures::TEST_PUB.trim());
         assert_eq!(public_key(), decode_public_key(fixtures::TEST_PUB.trim()));
     }
 
     #[cfg(not(debug_assertions))]
     #[test]
     fn release_build_ignores_the_test_key_env() {
-        let _lock = ENV_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let _env = UpdatePubkeyEnv::set(fixtures::TEST_PUB.trim());
+        let _lock = fixtures::lock_env();
+        let _env = CustomPubkeyEnv::set(fixtures::TEST_PUB.trim());
         let test_pub = decode_public_key(fixtures::TEST_PUB.trim()).expect("test key decodes");
         match public_key() {
             Err(UpdateError::PlaceholderKey) => {

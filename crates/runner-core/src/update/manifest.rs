@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use super::UpdateError;
 
+pub use crate::config::Channel;
+
 static SEMVER: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$")
         .expect("semver pattern compiles")
@@ -41,13 +43,28 @@ impl Target {
         Target::DarwinAarch64,
         Target::WindowsX86_64,
     ];
-}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Channel {
-    Stable,
-    Beta,
+    pub fn for_platform(os: &str, arch: &str, target_env: &str) -> Option<Target> {
+        match (os, arch, target_env) {
+            ("linux", "x86_64", "gnu") => Some(Target::LinuxX86_64),
+            ("linux", "aarch64", "gnu") => Some(Target::LinuxAarch64),
+            ("macos", "x86_64", _) => Some(Target::DarwinX86_64),
+            ("macos", "aarch64", _) => Some(Target::DarwinAarch64),
+            ("windows", "x86_64", "msvc") => Some(Target::WindowsX86_64),
+            _ => None,
+        }
+    }
+
+    pub fn current() -> Option<Target> {
+        const TARGET_ENV: &str = if cfg!(target_env = "msvc") {
+            "msvc"
+        } else if cfg!(target_env = "gnu") {
+            "gnu"
+        } else {
+            ""
+        };
+        Target::for_platform(std::env::consts::OS, std::env::consts::ARCH, TARGET_ENV)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -234,6 +251,46 @@ mod tests {
             .map_err(|error| UpdateError::ManifestInvalid(error.to_string()))?;
         update.validate()?;
         Ok(update)
+    }
+
+    #[test]
+    fn target_for_platform_maps_the_five_triples() {
+        let cases = [
+            (
+                ("linux", "x86_64", "gnu"),
+                Some(Target::LinuxX86_64),
+                "x86_64-unknown-linux-gnu",
+            ),
+            (
+                ("linux", "aarch64", "gnu"),
+                Some(Target::LinuxAarch64),
+                "aarch64-unknown-linux-gnu",
+            ),
+            (
+                ("macos", "x86_64", ""),
+                Some(Target::DarwinX86_64),
+                "x86_64-apple-darwin",
+            ),
+            (
+                ("macos", "aarch64", ""),
+                Some(Target::DarwinAarch64),
+                "aarch64-apple-darwin",
+            ),
+            (
+                ("windows", "x86_64", "msvc"),
+                Some(Target::WindowsX86_64),
+                "x86_64-pc-windows-msvc",
+            ),
+            (("linux", "riscv64", "gnu"), None, ""),
+        ];
+        for ((os, arch, env), expected, name) in cases {
+            assert_eq!(Target::for_platform(os, arch, env), expected);
+            if let Some(target) = expected {
+                assert_eq!(serde_json::to_value(target).unwrap(), json!(name));
+            }
+        }
+        assert!(Target::current().is_some());
+        assert!(Target::ALL.contains(&Target::current().unwrap()));
     }
 
     #[test]

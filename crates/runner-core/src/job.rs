@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -35,12 +35,19 @@ pub struct ExecutorConfig {
     pub max_concurrent_jobs: u32,
 }
 
+#[derive(Default)]
+struct JobState {
+    running: HashMap<String, watch::Sender<bool>>,
+    reservations: HashSet<String>,
+    updating: bool,
+}
+
 pub struct JobManager {
     config: ExecutorConfig,
     adapters: AdapterRegistry,
     mcp: Arc<McpServer>,
     host: Arc<RunnerHost>,
-    running: Mutex<HashMap<String, watch::Sender<bool>>>,
+    state: Mutex<JobState>,
 }
 
 #[derive(Clone)]
@@ -82,7 +89,7 @@ impl JobManager {
             adapters,
             mcp,
             host,
-            running: Mutex::new(HashMap::new()),
+            state: Mutex::new(JobState::default()),
         })
     }
 
@@ -95,32 +102,51 @@ impl JobManager {
     }
 
     pub fn active_jobs(&self) -> u32 {
-        self.running.lock().expect("job lock").len() as u32
+        self.state.lock().expect("job lock").running.len() as u32
     }
 
     pub fn running_ids(&self) -> Vec<String> {
-        self.running
+        self.state
             .lock()
             .expect("job lock")
+            .running
             .keys()
             .cloned()
             .collect()
+    }
+
+    pub fn begin_update(&self) -> bool {
+        let mut state = self.state.lock().expect("job lock");
+        if state.updating || !state.running.is_empty() || !state.reservations.is_empty() {
+            return false;
+        }
+        state.updating = true;
+        true
+    }
+
+    pub fn end_update(&self) {
+        self.state.lock().expect("job lock").updating = false;
     }
 
     pub fn accept(&self, offer: &JobOffer) -> Result<AcceptedOffer, String> {
         if !validate_job_id(&offer.job_id) {
             return Err("invalid job id".to_string());
         }
-        if self.active_jobs() >= self.config.max_concurrent_jobs {
-            return Err("runner is busy".to_string());
-        }
-        if self
-            .running
-            .lock()
-            .expect("job lock")
-            .contains_key(&offer.job_id)
         {
-            return Err("job is already running".to_string());
+            let state = self.state.lock().expect("job lock");
+            if state.updating {
+                return Err("runner is updating".to_string());
+            }
+            if state.running.contains_key(&offer.job_id)
+                || state.reservations.contains(&offer.job_id)
+            {
+                return Err("job is already running".to_string());
+            }
+            if state.running.len() + state.reservations.len()
+                >= self.config.max_concurrent_jobs as usize
+            {
+                return Err("runner is busy".to_string());
+            }
         }
         let lease_ok = util::parse_iso(&offer.lease_until)
             .map(|lease| lease > util::now_utc())
@@ -178,6 +204,20 @@ impl JobManager {
             .get("rework")
             .and_then(Value::as_bool)
             .unwrap_or(false);
+        {
+            let mut state = self.state.lock().expect("job lock");
+            if state.updating {
+                return Err("runner is updating".to_string());
+            }
+            if state.running.len() + state.reservations.len()
+                >= self.config.max_concurrent_jobs as usize
+            {
+                return Err("runner is busy".to_string());
+            }
+            if !state.reservations.insert(offer.job_id.clone()) {
+                return Err("job is already running".to_string());
+            }
+        }
         Ok(AcceptedOffer {
             repo,
             workspace: PathBuf::from(workspace),
@@ -192,22 +232,37 @@ impl JobManager {
 
     pub fn spawn(self: &Arc<Self>, offer: JobOffer, accepted: AcceptedOffer) {
         let (cancel_tx, cancel_rx) = watch::channel(false);
-        self.running
-            .lock()
-            .expect("job lock")
-            .insert(offer.job_id.clone(), cancel_tx);
+        {
+            let mut state = self.state.lock().expect("job lock");
+            state.reservations.remove(&offer.job_id);
+            state.running.insert(offer.job_id.clone(), cancel_tx);
+        }
         let manager = Arc::clone(self);
         let job_id = offer.job_id.clone();
         tokio::spawn(async move {
             manager.run_job(offer, accepted, cancel_rx).await;
-            manager.running.lock().expect("job lock").remove(&job_id);
+            manager
+                .state
+                .lock()
+                .expect("job lock")
+                .running
+                .remove(&job_id);
         });
     }
 
-    pub fn cancel(&self, job_id: &str) -> bool {
-        self.running
+    pub fn release(&self, job_id: &str) {
+        self.state
             .lock()
             .expect("job lock")
+            .reservations
+            .remove(job_id);
+    }
+
+    pub fn cancel(&self, job_id: &str) -> bool {
+        self.state
+            .lock()
+            .expect("job lock")
+            .running
             .get(job_id)
             .map(|cancel| cancel.send(true).is_ok())
             .unwrap_or(false)
@@ -562,9 +617,10 @@ mod tests {
     async fn capacity_is_enforced() {
         let (_dir, jobs) = manager(1).await;
         let (cancel, _cancel_rx) = watch::channel(false);
-        jobs.running
+        jobs.state
             .lock()
             .expect("job lock")
+            .running
             .insert("job-0".to_string(), cancel);
         let error = jobs
             .accept(&offer(
@@ -575,6 +631,47 @@ mod tests {
             ))
             .unwrap_err();
         assert!(error.contains("busy"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn update_gate_is_closed_while_a_job_runs() {
+        let (_dir, jobs) = manager(2).await;
+        let (cancel, _cancel_rx) = watch::channel(false);
+        jobs.state
+            .lock()
+            .expect("job lock")
+            .running
+            .insert("job-0".to_string(), cancel);
+        assert!(!jobs.begin_update());
+        jobs.state.lock().expect("job lock").running.clear();
+        assert!(jobs.begin_update());
+        jobs.end_update();
+    }
+
+    #[tokio::test]
+    async fn update_gate_waits_for_an_accepted_offer() {
+        let (_dir, jobs) = manager(2).await;
+        let offer = offer("job-1", "mock", json!({"projectKey": "p"}), &lease());
+        let _accepted = jobs.accept(&offer).unwrap();
+        assert!(!jobs.begin_update());
+        jobs.release("job-1");
+        assert!(jobs.begin_update());
+        jobs.end_update();
+    }
+
+    #[tokio::test]
+    async fn offers_are_declined_while_updating() {
+        let (_dir, jobs) = manager(2).await;
+        assert!(jobs.begin_update());
+        let error = jobs
+            .accept(&offer(
+                "job-1",
+                "mock",
+                json!({"projectKey": "p"}),
+                &lease(),
+            ))
+            .unwrap_err();
+        assert_eq!(error, "runner is updating");
     }
 
     #[tokio::test]
