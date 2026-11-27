@@ -88,6 +88,7 @@ services:
       api:
         condition: service_healthy
     restart: unless-stopped
+    stop_grace_period: 2s
     init: true
     security_opt:
       - no-new-privileges:true
@@ -114,6 +115,7 @@ services:
       web:
         condition: service_started
     restart: unless-stopped
+    stop_grace_period: 2s
     init: true
     security_opt:
       - no-new-privileges:true

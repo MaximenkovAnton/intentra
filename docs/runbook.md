@@ -94,7 +94,7 @@ docker compose config --quiet         # validate interpolation
 ../../scripts/install-docker-rollout.sh   # once per host; pinned docker-rollout v0.14
 IDP_CA_CERT=./idp-ca.crt docker compose \
   -f docker-compose.yml -f docker-compose.idp-ca.yml up -d --build
-docker compose ps                     # migrate exited 0; api, web and ingress healthy
+docker compose ps -a                  # migrate exited 0; api, web and ingress healthy
 ```
 
 The published origin is `ingress` (`${WEB_PORT:-8090}`); `api` and `web` publish no host ports.
@@ -103,7 +103,7 @@ keeps `api` and `web` reachable during the replace:
 
 ```bash
 ../../scripts/deploy.sh --check             # preflight only
-../../scripts/deploy.sh                     # build, migrate, roll api and web, verify
+../../scripts/deploy.sh                     # build, migrate, drain-roll api and web, recreate ingress, verify
 ```
 
 Details, the first cutover from the old single-port layout, rollback and limitations:
@@ -116,7 +116,10 @@ waits for the api healthcheck.
 Checks:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' <public-url>/healthz      # 200 (nginx)
+set -eu
+[ "$(curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' <public-url>/healthz)" = 200 ]
+[ "$(curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' <public-url>/api/auth/me)" = 401 ]
+[ "$(cd infra/compose && docker compose ps -a --format '{{.Service}} {{.State}} {{.ExitCode}}' migrate)" = "migrate exited 0" ]
 docker compose exec api node -e \
   "fetch('http://127.0.0.1:8080/healthz').then(r => process.exit(r.ok ? 0 : 1))"
 ```
