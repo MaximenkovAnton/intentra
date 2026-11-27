@@ -28,6 +28,13 @@ these Rust types. An adapter also implements:
 waits up to 30 minutes for `job.answer`. An adapter never opens a connection to
 the centre itself and never receives the runner token.
 
+## Accepting a job
+
+`JobManager::accept` opens the workspace repository before the adapter runs. An
+offer is declined when the workspace has uncommitted changes to tracked files
+(modified, deleted or added). Untracked files do not block the offer: the job
+worktree is created from `HEAD`, so those files never reach the agent.
+
 ## The adapters in this tree
 
 | id | file | notes |
