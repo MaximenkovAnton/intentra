@@ -6,7 +6,15 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
 
+# `pull_request_target` hands out a write token but never checks out or runs code
+# from the contribution, so a fork cannot execute anything here. Every permission
+# below is used by the action:
+#   contents      — stores the signature on the `cla-signatures` branch
+#   pull-requests — posts the sign / all-signed comment
+#   statuses      — reflects the result on the pull request
+#   actions       — after a signature arrives, re-runs the check that failed
 permissions:
+  actions: write
   contents: write
   pull-requests: write
   statuses: write
@@ -17,12 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check the contributor's CLA signature
-        uses: contributor-assistant/github-action@v2.6.1
+        # v2.6.1, pinned to a commit: this step holds a write token, so it must
+        # never resolve a moving tag.
+        uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path-to-signatures: signatures/cla.json
           path-to-document: https://github.com/MaximenkovAnton/intentra/blob/main/CLA.md
+          # The branch must already exist, hold `{"signedContributors": []}` and
+          # stay unprotected: the action only updates the file, it never creates
+          # the branch. `docs/operations/publishing.md` records the recovery.
           branch: cla-signatures
           allowlist: 'MaximenkovAnton,*[bot]'
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'

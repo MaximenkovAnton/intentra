@@ -11,9 +11,11 @@ your pull request:
 
 > I have read the CLA Document and I hereby sign the CLA
 
-The CLA workflow records your signature in the `cla-signatures` branch. If you
-contribute in the course of employment, confirm that your employer has
-authorized the Contribution and the rights granted in the CLA.
+The CLA workflow records your signature in the `cla-signatures` branch and
+re-runs the `CLA Signed` check, so it turns green without a new commit; if it
+stays red, comment `recheck` on the pull request. If you contribute in the course
+of employment, confirm that your employer has authorized the Contribution and
+the rights granted in the CLA.
 
 Pull requests without a recorded signature are not merged. Maintainers may
 close pull requests that do not accept the CLA.
