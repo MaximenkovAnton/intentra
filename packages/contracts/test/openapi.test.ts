@@ -31,6 +31,7 @@ describe('OpenAPI 3.1 document', () => {
     '/api/intents/{id}/accept',
     '/api/intents/{id}/rework',
     '/api/intents/{id}/cancel',
+    '/api/intents/{id}/retry',
     '/api/intents/{id}/spec',
     '/api/intents/{id}/findings',
     '/api/intents/{id}/plan',
