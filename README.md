@@ -24,11 +24,13 @@ Full deployment from zero, including Postgres, the memory stack and Pocket ID, i
 ```bash
 # hosts: Docker with Compose v2 — one for the control plane, one for memory, one for Pocket ID.
 # LXC/VM provisioning and addressing are environment-specific and live outside this repository.
-cd infra/compose
-cp .env.example .env    # fill in DATABASE_URL, OIDC_*, SESSION_SECRET and the memory URLs
-docker compose up -d --build
+cp infra/compose/.env.example infra/compose/.env    # fill in DATABASE_URL, OIDC_*, SESSION_SECRET and the memory URLs
+scripts/install-docker-rollout.sh                 # once per host; pinned docker-rollout v0.14
+docker compose -f infra/compose/docker-compose.yml up -d --build   # first bring-up only
+# updates: scripts/deploy.sh (rolling; see docs/operations/deploy.md)
 # with a private/self-signed IdP, add the CA overlay:
-IDP_CA_CERT=./idp-ca.crt docker compose -f docker-compose.yml -f docker-compose.idp-ca.yml up -d
+IDP_CA_CERT=./idp-ca.crt docker compose \
+  -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.idp-ca.yml up -d
 ```
 
 The control plane is served on `${PUBLIC_URL}` (the dev default is `http://localhost:8090`);
@@ -44,7 +46,7 @@ sign-in goes through Pocket ID. The runner is the `intentra-runner` binary built
 | contracts | `packages/contracts` | Zod REST schemas, OpenAPI 3.1, WS runner protocol, adapter types |
 | runner | `crates/runner` | `intentra-runner` CLI: register/start/status/doctor/mcp, WSS transport, worktree/git, tree-sitter index, verify/claims/diff, DSH + generic CLI + mock adapters |
 | runner-core | `crates/runner-core` | Shared protocol, config, job/adapter types, git and index primitives |
-| infrastructure | `infra/` | portable compose stacks: control plane (api/web/migrate), memory (FalkorDB/Qdrant/Ollama), Pocket ID; nginx |
+| infrastructure | `infra/` | portable compose stacks: control plane (api/web/ingress/migrate), memory (FalkorDB/Qdrant/Ollama), Pocket ID; nginx |
 | docs | `docs/` | architecture, development commands and adapters, operations (memory, IdP), runbook |
 
 Postgres, FalkorDB/Qdrant/Ollama and Pocket ID run on their own hosts and are reached by URL.

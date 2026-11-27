@@ -33,5 +33,8 @@ COPY --from=build --chown=nginx:nginx /repo/apps/web/dist /usr/share/nginx/html
 # able to read the bundle and traverse its directories.
 RUN chmod -R a+rX /usr/share/nginx/html
 
+ARG GIT_REVISION=unknown
+LABEL org.opencontainers.image.revision=$GIT_REVISION
+
 USER nginx
 EXPOSE 8080

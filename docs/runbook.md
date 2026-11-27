@@ -19,8 +19,8 @@ operator's private infrastructure repository, not here.
 - The public origin `<public-url>` that web and api share, and HTTPS for Pocket ID (passkeys
   need a secure context; a private CA is acceptable).
 - Ports on the host that runs the control-plane compose file and the Playwright server: `8090`
-  (web/api origin) and `4173` (Playwright web server), plus `5432` for the optional local test
-  database.
+  (ingress origin; web and api are internal), `4173` (Playwright web server) and `5432` for the
+  optional local test database.
 
 ## 1. PostgreSQL
 
@@ -91,10 +91,23 @@ cp /path/to/idp-ca.crt infra/compose/idp-ca.crt
 cd infra/compose
 cp .env.example .env                  # fill in DATABASE_URL, SESSION_SECRET, memory URLs, OIDC values
 docker compose config --quiet         # validate interpolation
+../../scripts/install-docker-rollout.sh   # once per host; pinned docker-rollout v0.14
 IDP_CA_CERT=./idp-ca.crt docker compose \
   -f docker-compose.yml -f docker-compose.idp-ca.yml up -d --build
-docker compose ps                     # migrate exited 0; api and web healthy
+docker compose ps -a                  # migrate exited 0; api, web and ingress healthy
 ```
+
+The published origin is `ingress` (`${WEB_PORT:-8090}`); `api` and `web` publish no host ports.
+`docker compose up -d --build` is only the first bring-up. Updates use the rolling path, which
+keeps `api` and `web` reachable during the replace:
+
+```bash
+../../scripts/deploy.sh --check             # preflight only
+../../scripts/deploy.sh                     # build, migrate, drain-roll api and web, recreate ingress, verify
+```
+
+Details, the first cutover from the old single-port layout, rollback and limitations:
+[`operations/deploy.md`](operations/deploy.md).
 
 Plain-HTTP development runs `NODE_ENV=development`; `production` requires TLS on `PUBLIC_URL`
 and an https OIDC issuer. `migrate` applies the Drizzle migrations before `api` starts; `web`
@@ -103,7 +116,10 @@ waits for the api healthcheck.
 Checks:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' <public-url>/healthz      # 200 (nginx)
+set -eu
+[ "$(curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' <public-url>/healthz)" = 200 ]
+[ "$(curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' <public-url>/api/auth/me)" = 401 ]
+[ "$(cd infra/compose && docker compose ps -a --format '{{.Service}} {{.State}} {{.ExitCode}}' migrate)" = "migrate exited 0" ]
 docker compose exec api node -e \
   "fetch('http://127.0.0.1:8080/healthz').then(r => process.exit(r.ok ? 0 : 1))"
 ```
