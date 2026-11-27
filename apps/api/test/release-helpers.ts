@@ -8,6 +8,8 @@ import type { ArtifactSource } from '../src/services/release-artifacts.js';
 import type { Database } from '../src/db/client.js';
 import { projectRunners, runners, type RunnerRow } from '../src/db/schema.js';
 
+export { PLACEHOLDER_RELEASE_KEY } from '../src/services/releases.js';
+
 const ED25519_PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
 
 const fixture = (name: string): string =>
@@ -19,7 +21,6 @@ export const MANIFEST_BYTES = readFileSync(
 export const MANIFEST = MANIFEST_BYTES.toString('utf8');
 export const SIGNATURE = fixture('manifest.sig').trim();
 export const TEST_PUBLIC_KEY = fixture('test.pub').trim();
-export const PLACEHOLDER_RELEASE_KEY = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
 const testPrivateKey = createPrivateKey({
   key: Buffer.concat([ED25519_PKCS8_PREFIX, Buffer.from(fixture('test.seed').trim(), 'base64')]),

@@ -25,11 +25,14 @@ export interface ReleaseArtifactsInput {
 const isMissingFile = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 
-const upstreamFailure = (error: unknown): HttpError => {
+const localFailure = (): HttpError => new HttpError('INTERNAL', 'release cache is unavailable');
+
+const classifyFailure = (error: unknown): HttpError => {
   if (error instanceof HttpError) return error;
   if (error instanceof Error && error.name === 'AbortError') {
     return new HttpError('UPSTREAM_FAILED', 'artifact download timed out');
   }
+  if (typeof error === 'object' && error !== null && 'syscall' in error) return localFailure();
   return new HttpError('UPSTREAM_FAILED', 'artifact download failed');
 };
 
@@ -57,7 +60,7 @@ export function createReleaseArtifacts(input: ReleaseArtifactsInput): ReleaseArt
       for await (const chunk of createReadStream(path)) hash.update(chunk);
     } catch (error) {
       if (isMissingFile(error)) return null;
-      throw error;
+      throw localFailure();
     }
     return hash.digest('hex');
   };
@@ -67,12 +70,20 @@ export function createReleaseArtifacts(input: ReleaseArtifactsInput): ReleaseArt
     const digest = await hashFile(path);
     if (digest === null) return null;
     if (digest === asset.sha256) return path;
-    await rm(path, { force: true });
+    try {
+      await rm(path, { force: true });
+    } catch {
+      throw localFailure();
+    }
     return null;
   };
 
   const download = async (asset: UpdateAsset): Promise<string> => {
-    await mkdir(input.cacheDir, { recursive: true });
+    try {
+      await mkdir(input.cacheDir, { recursive: true });
+    } catch {
+      throw localFailure();
+    }
     const tmp = join(input.cacheDir, `.tmp-${randomUUID()}`);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), input.timeoutMs);
@@ -103,8 +114,8 @@ export function createReleaseArtifacts(input: ReleaseArtifactsInput): ReleaseArt
       await rename(tmp, target);
       return target;
     } catch (error) {
-      await rm(tmp, { force: true });
-      throw upstreamFailure(error);
+      await rm(tmp, { force: true }).catch(() => undefined);
+      throw classifyFailure(error);
     } finally {
       clearTimeout(timer);
     }

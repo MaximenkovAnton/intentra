@@ -19,11 +19,18 @@ import { HttpError } from '../errors.js';
 export const PLACEHOLDER_RELEASE_KEY = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
+export interface ResolveUpdateInput {
+  readonly runner: RunnerRow;
+  readonly channel: Channel;
+  readonly current: string | null;
+}
+
 export interface ReleaseService {
   readonly keyConfigured: boolean;
   publish(input: { manifest: string; signature: string }): Promise<{ created: boolean; release: Release }>;
   yank(version: string, yanked: boolean): Promise<void>;
-  resolveUpdate(input: { runner: RunnerRow; channel: Channel; current: string | null }): Promise<RunnerUpdate>;
+  resolveUpdate(input: ResolveUpdateInput): Promise<RunnerUpdate>;
+  resolveUpdates(inputs: ReadonlyArray<ResolveUpdateInput>): Promise<Map<string, RunnerUpdate>>;
   findArtifact(fileName: string): Promise<UpdateAsset | null>;
 }
 
@@ -43,11 +50,13 @@ export function createReleaseService(input: ReleaseServiceInput): ReleaseService
     type: 'spki',
   });
 
+  const releasePoolCondition = and(
+    eq(releases.yanked, false),
+    eq(releases.protocolVersion, PROTOCOL_VERSION),
+  );
+
   const pool = async (): Promise<ReleaseRow[]> =>
-    input.db
-      .select()
-      .from(releases)
-      .where(and(eq(releases.yanked, false), eq(releases.protocolVersion, PROTOCOL_VERSION)));
+    input.db.select().from(releases).where(releasePoolCondition);
 
   const latestOf = (rows: ReadonlyArray<ReleaseRow>, channel: Channel): ReleaseRow | null => {
     const candidates = rows.filter(
@@ -85,6 +94,52 @@ export function createReleaseService(input: ReleaseServiceInput): ReleaseService
       throw new HttpError('VALIDATION', 'asset exceeds the release size limit');
     }
     return parsed.data;
+  };
+
+  const decide = (
+    rows: ReadonlyArray<ReleaseRow>,
+    { runner, channel, current }: ResolveUpdateInput,
+  ): RunnerUpdate => {
+    const latest = latestOf(rows, channel);
+    const stored = SemVerSchema.safeParse(runner.version);
+    const explicit = current === null ? null : SemVerSchema.safeParse(current);
+    const version = stored.success ? stored.data : explicit?.success === true ? explicit.data : null;
+    const base = {
+      channel,
+      latestVersion: latest?.version ?? null,
+      pinnedVersion: runner.pinnedVersion,
+      autoUpdate: runner.autoUpdate,
+    };
+    if (runner.pinnedVersion !== null) {
+      const pinned = rows.find((row) => row.version === runner.pinnedVersion);
+      if (pinned === undefined) {
+        return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'pinned version is unavailable' });
+      }
+      if (version !== null && semver.eq(pinned.version, version)) {
+        return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'already on the pinned version' });
+      }
+      if (runner.autoUpdate === false) {
+        return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'auto-update is disabled' });
+      }
+      return RunnerUpdateSchema.parse({
+        ...base,
+        available: true,
+        manifest: pinned.manifest,
+        signature: pinned.signature,
+      });
+    }
+    if (latest === null || (version !== null && semver.gte(version, latest.version))) {
+      return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'no newer version' });
+    }
+    if (runner.autoUpdate === false) {
+      return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'auto-update is disabled' });
+    }
+    return RunnerUpdateSchema.parse({
+      ...base,
+      available: true,
+      manifest: latest.manifest,
+      signature: latest.signature,
+    });
   };
 
   return {
@@ -129,50 +184,23 @@ export function createReleaseService(input: ReleaseServiceInput): ReleaseService
       if (updated.length === 0) throw new HttpError('NOT_FOUND', 'Release not found');
     },
 
-    async resolveUpdate({ runner, channel, current }) {
+    async resolveUpdate(input) {
+      return decide(await pool(), input);
+    },
+
+    async resolveUpdates(inputs) {
+      if (inputs.length === 0) return new Map<string, RunnerUpdate>();
       const rows = await pool();
-      const latest = latestOf(rows, channel);
-      const stored = SemVerSchema.safeParse(runner.version);
-      const explicit = current === null ? null : SemVerSchema.safeParse(current);
-      const version = stored.success ? stored.data : explicit?.success === true ? explicit.data : null;
-      const base = {
-        channel,
-        latestVersion: latest?.version ?? null,
-        pinnedVersion: runner.pinnedVersion,
-        autoUpdate: runner.autoUpdate,
-      };
-      if (runner.pinnedVersion !== null) {
-        const pinned = rows.find((row) => row.version === runner.pinnedVersion);
-        if (pinned === undefined) {
-          return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'pinned version is unavailable' });
-        }
-        if (version !== null && semver.eq(pinned.version, version)) {
-          return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'already on the pinned version' });
-        }
-        return RunnerUpdateSchema.parse({
-          ...base,
-          available: true,
-          manifest: pinned.manifest,
-          signature: pinned.signature,
-        });
-      }
-      if (latest === null || (version !== null && semver.gte(version, latest.version))) {
-        return RunnerUpdateSchema.parse({ ...base, available: false, reason: 'no newer version' });
-      }
-      return RunnerUpdateSchema.parse({
-        ...base,
-        available: true,
-        manifest: latest.manifest,
-        signature: latest.signature,
-        ...(runner.autoUpdate ? {} : { reason: 'auto-update is disabled' }),
-      });
+      return new Map(
+        inputs.map((entry): [string, RunnerUpdate] => [entry.runner.id, decide(rows, entry)]),
+      );
     },
 
     async findArtifact(fileName) {
       const rows = await input.db
         .select()
         .from(releases)
-        .where(and(eq(releases.yanked, false), eq(releases.protocolVersion, PROTOCOL_VERSION)))
+        .where(releasePoolCondition)
         .orderBy(desc(releases.publishedAt));
       for (const row of rows) {
         let decoded: unknown;

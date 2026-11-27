@@ -244,7 +244,7 @@ describe.skipIf(!hasDatabase)('release policy', () => {
     expect((await update(older.token)).json()).toMatchObject({ available: true, latestVersion: '0.2.0' });
   });
 
-  it('returns the manifest when auto-update is disabled', async () => {
+  it('does not offer a release when auto-update is disabled', async () => {
     await publishFixture();
     const owner = await seedUser(harness.db);
     const { runner, token } = await seedRunner(harness.db, { ownerUserId: owner.id, version: '0.1.0' });
@@ -252,9 +252,36 @@ describe.skipIf(!hasDatabase)('release policy', () => {
     const response = await update(token);
     expect(response.statusCode).toBe(200);
     const body = response.json<Record<string, unknown>>();
-    expect(body).toMatchObject({ available: true, autoUpdate: false, reason: 'auto-update is disabled' });
-    expect(body.manifest).toBe(MANIFEST);
-    expect(body.signature).toBe(SIGNATURE);
+    expect(body).toMatchObject({
+      available: false,
+      autoUpdate: false,
+      latestVersion: '0.2.0',
+      reason: 'auto-update is disabled',
+    });
+    expect(body).not.toHaveProperty('manifest');
+    expect(body).not.toHaveProperty('signature');
+  });
+
+  it('does not offer the pinned version when auto-update is disabled', async () => {
+    await publishFixture();
+    const owner = await seedUser(harness.db);
+    const { runner, token } = await seedRunner(harness.db, { ownerUserId: owner.id, version: '0.1.0' });
+    await harness.db
+      .update(runners)
+      .set({ pinnedVersion: '0.2.0', autoUpdate: false })
+      .where(eq(runners.id, runner.id));
+    const response = await update(token);
+    expect(response.statusCode).toBe(200);
+    const body = response.json<Record<string, unknown>>();
+    expect(body).toMatchObject({
+      available: false,
+      autoUpdate: false,
+      latestVersion: '0.2.0',
+      pinnedVersion: '0.2.0',
+      reason: 'auto-update is disabled',
+    });
+    expect(body).not.toHaveProperty('manifest');
+    expect(body).not.toHaveProperty('signature');
   });
 
   it('rejects a missing or revoked runner token', async () => {
