@@ -123,6 +123,38 @@ The config file is `~/.intentra/config.toml` (or `INTENTRA_CONFIG`); see
 [`adapters.md`](adapters.md) for runtimes, workspaces and the model key variables. Register with a
 one-time token from `POST /api/projects/<key>/runners/registration-token`.
 
+## Runner releases and updates
+
+A release is triggered by a tag on `main` and built by `.github/workflows/release.yml`; it needs
+the `RELEASE_SIGNING_KEY` repository secret and, to publish to the control plane, the `CENTER_URL`
+variable and `CENTER_RELEASE_TOKEN` secret. The procedure, secrets and verification steps are in
+[`docs/operations/releases.md`](../operations/releases.md).
+
+```bash
+pnpm -w test:release                       # release-script and workflow checks
+bash scripts/release/package.sh            # host target, output in dist/release/
+bash scripts/release/package.sh x86_64-unknown-linux-gnu
+```
+
+An installed runner checks the centre for a newer release; `--apply` installs it in place:
+
+```bash
+./target/release/intentra-runner update
+./target/release/intentra-runner update --apply   # refuses while the daemon runs
+```
+
+`[update]` configuration, channels, pinning, rollback and the air-gapped procedure are in
+[`docs/operations/updates.md`](../operations/updates.md). The end-to-end proof drives a real centre
+and two runner builds, so it needs a disposable database (never the shared `intentra_test`):
+
+```bash
+TEST_DATABASE_URL='postgres://intentra:intentra@localhost:55432/intentra_test_e2e' \
+  ./scripts/release/e2e-update.sh
+```
+
+The script writes its evidence to `.agile/e2e-evidence.md`. It is slow and destructive; rerun it
+only when the release pipeline, the centre update channel or the runner update code changes.
+
 ## Acceptance gates
 
 ```bash
@@ -138,4 +170,7 @@ The API integration tests use `TEST_DATABASE_URL` and are skipped without it.
 
 `.github/workflows/ci.yml` runs two jobs: `node` (pnpm install with `--frozen-lockfile`, then
 typecheck, lint, test and build, with a PostgreSQL 18 service and `TEST_DATABASE_URL`) and `rust`
-(`cargo fmt --check`, `cargo clippy`, `cargo test`).
+(`cargo fmt --check`, `cargo clippy`, `cargo test`). A `vX.Y.Z` tag on `main` runs
+`.github/workflows/release.yml`, which repeats both gate jobs, adds `pnpm -w test:release`, builds
+the five release targets and publishes the signed release
+([`docs/operations/releases.md`](../operations/releases.md)).

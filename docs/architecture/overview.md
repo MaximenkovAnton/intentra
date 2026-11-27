@@ -29,10 +29,17 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 
 - `crates/runner-core` — protocol structs shared by centre and runner (hello/heartbeat now, job
   messages later).
-- `crates/runner` — the `intentra-runner` CLI binary: `register`/`start`/`status`/`doctor`/`mcp`.
+- `crates/runner` — the `intentra-runner` CLI binary:
+  `register`/`start`/`status`/`doctor`/`mcp`/`update`.
 - Outbound WSS transport with reconnect, job executor, worktrees and git operations, local
   tree-sitter index, MCP stdio server, claim verifier, gate runner, diff summary, and the DSH,
   generic-CLI and mock adapters — see `docs/development/adapters.md`.
+- Signed releases and self-update: a `vX.Y.Z` tag builds the binary for five targets and publishes
+  an Ed25519-signed update manifest (`.github/workflows/release.yml`); the centre stores the
+  manifest and streams the archives, and the runner verifies both signature and SHA-256, applies
+  only when no job is active, and rolls back a binary that fails to start. See
+  `docs/operations/releases.md` and `docs/operations/updates.md`; the decision is recorded in
+  `docs/architecture/adr/0001-runner-releases-and-updates.md`.
 
 ## Data flow
 
@@ -63,4 +70,5 @@ the Node gates with a PostgreSQL 18 service and the Rust gates in a separate job
 Self-hosted self-dogfood on the slice: the runner executes build jobs on the machine with the
 repository, and only statuses, findings, metadata and a content-free diff summary leave it.
 
-See `docs/development/commands.md` for commands and `AGENTS.md` for coding conventions.
+See `docs/development/commands.md` for commands, `docs/capabilities/index.md` for the capability
+rows with their entry points and tests, and `AGENTS.md` for coding conventions.
