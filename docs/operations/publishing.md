@@ -14,9 +14,10 @@ runner and is not published.
 | `archive/*` | no | Local history snapshots; never pushed. |
 
 `main` is protected server-side, because the repository is public: a pull
-request is required, the CI checks `Node · typecheck, lint, test, build` and
-`Rust · ubuntu-latest`/`macos-latest`/`windows-latest` must pass, force pushes
-and deletions are rejected, and the rules apply to administrators too.
+request is required, the CI checks `Node · typecheck, lint, test, build`,
+`Rust · ubuntu-latest`/`macos-latest`/`windows-latest` and `CLA Signed` must
+pass, force pushes and deletions are rejected, and the rules apply to
+administrators too.
 
 A second guard is client-side: `.githooks/pre-push` refuses direct
 `main`/`master` pushes and ephemeral branches on any `github.com` remote. Enable
@@ -67,8 +68,10 @@ the check turns green without a new commit; the `recheck` comment retriggers it
 manually. The job needs the `actions: write` permission for that re-run — without
 it the signature is recorded but the job ends red.
 
-The check is not a required status on `main` yet: a change to the action or a
-GitHub deprecation would otherwise block every pull request, including the
-maintainer's own, and protection applies to administrators. Keep it green and
-treat a red `CLA Signed` as a merge blocker in review. Anyone already covered by
-the allowlist (`MaximenkovAnton`, bots) passes without signing.
+The check is a required status on `main`. It turns green for allowlisted
+accounts (`MaximenkovAnton`, bots) without a signature, and for everyone else
+once the signing comment is recorded and the failed pull request check is
+re-run. A red or missing `CLA Signed` therefore blocks the merge, so a change to
+the action, a lost `actions: write` permission or a deleted `cla-signatures`
+branch blocks every pull request until it is repaired — check that path first
+when merge is blocked and every other gate is green.
