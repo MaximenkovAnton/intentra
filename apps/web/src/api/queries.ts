@@ -11,6 +11,7 @@ import type {
   AnswerIntentInput,
   PostIntentMessageInput,
   ReworkIntentInput,
+  UpdatePolicyInput,
   UpdateProjectInput,
 } from "./types"
 import type { ProjectAccess } from "../auth/permissions"
@@ -360,6 +361,22 @@ export const useRotateRunnerToken = () => {
     mutationFn: (runnerId: string) =>
       unwrapResponse(
         api.POST("/api/runners/{id}/rotate-token", { params: { path: { id: runnerId } } }),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.runners })
+    },
+  })
+}
+
+export const useUpdateRunnerPolicy = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ runnerId, input }: { runnerId: string; input: UpdatePolicyInput }) =>
+      expectNoContent(
+        api.PUT("/api/runners/{id}/update-policy", {
+          params: { path: { id: runnerId } },
+          body: input,
+        }),
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.runners })
