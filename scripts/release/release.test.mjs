@@ -146,6 +146,27 @@ test('manifest.mjs refuses a signature the runner public key cannot verify', () 
   assert.match(result.stderr, /does not verify against/);
 });
 
+test('committed release.pub is a real 32-byte key', () => {
+  const encoded = readFileSync(join(ROOT, 'crates/runner-core/keys/release.pub'), 'utf8').trim();
+  const raw = Buffer.from(encoded, 'base64');
+  assert.equal(encoded.length, 44);
+  assert.equal(raw.length, 32);
+  assert.equal(raw.toString('base64'), encoded);
+  assert.ok(!raw.every((byte) => byte === 0));
+});
+
+test('manifest.mjs refuses a placeholder release public key', () => {
+  const assets = makeAssets();
+  const placeholder = join(assets, 'placeholder.pub');
+  writeFileSync(placeholder, `${Buffer.alloc(32).toString('base64')}\n`);
+  const result = runManifest(
+    ['--version', version, '--assets', assets, '--out', join(assets, 'out'), '--public-key', placeholder],
+    { RELEASE_SIGNING_KEY: fixtureSeed },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /still the all-zero placeholder/);
+});
+
 test('manifest.mjs refuses a version that differs from Cargo.toml', () => {
   const assets = makeAssets();
   const result = runManifest(
@@ -177,4 +198,6 @@ test('release.yml parses and builds every target on its runner', () => {
       `${entry.target} on ${entry.os}`,
     );
   }
+  const packageStep = workflow.jobs.build.steps.find((step) => step.name === 'Package');
+  assert.equal(packageStep.env.CARGO_COMMAND, '${{ matrix.cargo }}');
 });
