@@ -8,6 +8,45 @@ use crate::util::{expand_tilde, inside_roots, is_valid_ws_url};
 pub const DEFAULT_TOKEN_PATH: &str = "~/.intentra/token";
 pub const DEFAULT_LOG_LEVEL: &str = "info";
 pub const DEFAULT_MAX_CONCURRENT_JOBS: u32 = 1;
+pub const DEFAULT_UPDATE_CHECK_INTERVAL_MIN: u64 = 360;
+pub const MIN_UPDATE_CHECK_INTERVAL_MIN: u64 = 5;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Channel {
+    #[default]
+    Stable,
+    Beta,
+}
+
+impl Channel {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Channel::Stable => "stable",
+            Channel::Beta => "beta",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct UpdateConfig {
+    pub enabled: bool,
+    pub channel: Channel,
+    pub check_interval_min: u64,
+    pub allow_insecure_http: bool,
+}
+
+impl Default for UpdateConfig {
+    fn default() -> Self {
+        UpdateConfig {
+            enabled: true,
+            channel: Channel::Stable,
+            check_interval_min: DEFAULT_UPDATE_CHECK_INTERVAL_MIN,
+            allow_insecure_http: false,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -74,6 +113,8 @@ pub struct Config {
     pub log_level: String,
     #[serde(default = "default_max_concurrent_jobs")]
     pub max_concurrent_jobs: u32,
+    #[serde(default)]
+    pub update: UpdateConfig,
 }
 
 fn default_token_path() -> String {
@@ -114,6 +155,8 @@ pub enum ConfigError {
     AllowRoot(String),
     #[error("workspace {key} must be an absolute path inside allow_roots, got {path}")]
     Workspace { key: String, path: String },
+    #[error("update.check_interval_min must be at least {MIN_UPDATE_CHECK_INTERVAL_MIN}")]
+    UpdateCheckInterval,
 }
 
 impl Config {
@@ -145,6 +188,9 @@ impl Config {
         }
         if self.max_concurrent_jobs < 1 {
             return Err(ConfigError::MaxConcurrentJobs);
+        }
+        if self.update.check_interval_min < MIN_UPDATE_CHECK_INTERVAL_MIN {
+            return Err(ConfigError::UpdateCheckInterval);
         }
         let roots = self.roots();
         for workspace in self.workspaces.values() {
@@ -205,6 +251,7 @@ mod tests {
             allow_roots: vec![],
             log_level: "info".to_string(),
             max_concurrent_jobs: 1,
+            update: UpdateConfig::default(),
         }
     }
 
@@ -273,6 +320,60 @@ mod tests {
             config.runtimes.get("dsh").unwrap().model.as_deref(),
             Some("deepseek-flash")
         );
+    }
+
+    #[test]
+    fn update_section_defaults() {
+        let config: Config = toml::from_str("server_url = \"wss://example.test\"").unwrap();
+        assert_eq!(
+            config.update,
+            UpdateConfig {
+                enabled: true,
+                channel: Channel::Stable,
+                check_interval_min: 360,
+                allow_insecure_http: false,
+            }
+        );
+        assert!(config.validate().is_ok());
+        let explicit: Config = toml::from_str(
+            "server_url = \"wss://example.test\"\n\n[update]\nchannel = \"stable\"\nenabled = true\n",
+        )
+        .unwrap();
+        assert_eq!(explicit.update.channel, Channel::Stable);
+        assert_eq!(explicit.update.check_interval_min, 360);
+    }
+
+    fn load_update_section(section: &str) -> Result<Config, ConfigError> {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(
+            &path,
+            format!("server_url = \"wss://example.test\"\n\n[update]\n{section}"),
+        )
+        .unwrap();
+        Config::load(&path)
+    }
+
+    #[test]
+    fn invalid_update_sections_are_rejected() {
+        for section in [
+            "channel = \"nightly\"\n",
+            "allow_insecure_http = \"yes\"\n",
+            "jitter = 5\n",
+        ] {
+            assert!(
+                matches!(load_update_section(section), Err(ConfigError::Parse { .. })),
+                "{section} must be a parse error"
+            );
+        }
+        assert!(matches!(
+            load_update_section("check_interval_min = 4\n"),
+            Err(ConfigError::UpdateCheckInterval)
+        ));
+        assert!(matches!(
+            load_update_section("check_interval_min = 5\n"),
+            Ok(config) if config.update.check_interval_min == 5
+        ));
     }
 
     #[test]

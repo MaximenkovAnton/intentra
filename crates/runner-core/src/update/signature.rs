@@ -12,7 +12,15 @@ pub fn verify_manifest(
         .as_slice()
         .try_into()
         .map_err(|_| UpdateError::KeyInvalid)?;
-    let key = VerifyingKey::from_bytes(&key_array).map_err(|_| UpdateError::KeyInvalid)?;
+    verify_manifest_with_key(manifest_bytes, signature_b64, &key_array)
+}
+
+pub fn verify_manifest_with_key(
+    manifest_bytes: &[u8],
+    signature_b64: &str,
+    key_bytes: &[u8; 32],
+) -> Result<(), UpdateError> {
+    let key = VerifyingKey::from_bytes(key_bytes).map_err(|_| UpdateError::KeyInvalid)?;
     let signature_bytes = base64::decode(signature_b64.trim(), "signature")?;
     let signature =
         Signature::from_slice(&signature_bytes).map_err(|_| UpdateError::SignatureInvalid)?;

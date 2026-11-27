@@ -30,6 +30,7 @@ pub struct ClientConfig {
     pub adapters: Vec<AdapterInfo>,
     pub workspaces: Vec<String>,
     pub heartbeat_seconds: u64,
+    pub hello: Option<watch::Sender<bool>>,
 }
 
 impl ClientConfig {
@@ -48,6 +49,7 @@ impl ClientConfig {
             adapters,
             workspaces,
             heartbeat_seconds: DEFAULT_HEARTBEAT_SECONDS,
+            hello: None,
         }
     }
 }
@@ -141,6 +143,9 @@ async fn session(
         }),
     )
     .await?;
+    if let Some(hello) = &config.hello {
+        let _ = hello.send(true);
+    }
     send(&mut sink, &heartbeat(jobs)).await?;
     let interval = Duration::from_secs(config.heartbeat_seconds.max(1));
     let mut heartbeat_timer =
@@ -193,13 +198,13 @@ async fn handle_center_message(
     match message {
         CenterMessage::JobOffer(offer) => match jobs.accept(&offer) {
             Ok(accepted) => {
-                send(
-                    sink,
-                    &RunnerMessage::JobAccepted(JobAccepted {
-                        job_id: offer.job_id.clone(),
-                    }),
-                )
-                .await?;
+                let accepted_message = RunnerMessage::JobAccepted(JobAccepted {
+                    job_id: offer.job_id.clone(),
+                });
+                if let Err(error) = send(sink, &accepted_message).await {
+                    jobs.release(&offer.job_id);
+                    return Err(error);
+                }
                 jobs.spawn(offer, accepted);
             }
             Err(reason) => {
@@ -429,6 +434,58 @@ mod tests {
         assert_eq!(second["protocolVersion"], first["protocolVersion"]);
         shutdown_tx.send(true).unwrap();
         server.abort();
+        tokio::time::timeout(Duration::from_secs(5), client)
+            .await
+            .expect("runner stops after shutdown")
+            .unwrap()
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn an_offer_is_declined_with_the_update_reason_while_updating() {
+        let (_dir, jobs) = manager(vec![]).await;
+        assert!(jobs.begin_update());
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut ws = accept_async(stream).await.unwrap();
+            let mut seen: Vec<Value> = Vec::new();
+            while let Some(value) = next_json(&mut ws).await {
+                let kind = value["type"].as_str().unwrap_or_default().to_string();
+                if kind == "hello" {
+                    let offer = json!({
+                        "type": "job.offer",
+                        "jobId": "job-1",
+                        "intentId": "intent-1",
+                        "stage": "build",
+                        "runtime": "mock",
+                        "payload": {"projectKey": "p"},
+                        "leaseUntil": "2099-01-01T00:00:00.000Z"
+                    });
+                    ws.send(Message::text(offer.to_string())).await.unwrap();
+                }
+                seen.push(value);
+                if kind == "job.declined" {
+                    break;
+                }
+            }
+            seen
+        });
+        let (shutdown_tx, shutdown_rx) = watch::channel(false);
+        let client = tokio::spawn(run(
+            ClientConfig::new(format!("ws://{addr}"), "token", vec![], vec![]),
+            jobs,
+            shutdown_rx,
+        ));
+        let seen = tokio::time::timeout(Duration::from_secs(20), server)
+            .await
+            .expect("the runner answers the offer")
+            .unwrap();
+        let declined = find(&seen, "job.declined")[0];
+        assert_eq!(declined["jobId"], "job-1");
+        assert_eq!(declined["reason"], "runner is updating");
+        shutdown_tx.send(true).unwrap();
         tokio::time::timeout(Duration::from_secs(5), client)
             .await
             .expect("runner stops after shutdown")
