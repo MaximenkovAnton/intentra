@@ -16,6 +16,7 @@ import {
   decisions,
   findings,
   intentMessages,
+  intents,
   jobs,
   requirements,
   stages,
@@ -37,6 +38,7 @@ import {
   transitionIntent,
   type Actor,
 } from '../intents/service.js';
+import { recordAudit } from '../services/audit.js';
 import { EMPTY_CONTEXT_PACK } from '../prompts/context.js';
 import { frontOfficePrompt, specCriticPrompt, specWriterPrompt } from '../prompts/templates.js';
 import { buildPrompt, planPrompt, reviewPrompt, verifyPrompt } from './prompts.js';
@@ -57,6 +59,7 @@ import {
   loadIntent,
   loadStage,
   publishJob,
+  publishStage,
   requeueJob,
   startStageRow,
   updateJobPayload,
@@ -124,22 +127,94 @@ const latestSpecMd = async (deps: OrchestratorDeps, intentId: string): Promise<s
   return bundle?.spec.bodyMd ?? null;
 };
 
-export async function startIntake(deps: OrchestratorDeps, intent: IntentRow): Promise<void> {
-  const stage = await startStageRow(deps, intent, 'intake');
+const intakePrompt = async (deps: OrchestratorDeps, intent: IntentRow): Promise<string> => {
   const messages = await deps.db
     .select({ role: intentMessages.role, body: intentMessages.body })
     .from(intentMessages)
     .where(eq(intentMessages.intentId, intent.id))
     .orderBy(desc(intentMessages.createdAt))
     .limit(20);
-  const prompt = frontOfficePrompt({
+  return frontOfficePrompt({
     title: intent.title,
     statement: intent.statement,
     messages: messages.toReversed(),
     contextPack: EMPTY_CONTEXT_PACK,
     capabilities: [],
   });
-  await enqueueJob(deps, intent, stage, payloadOf('intake', prompt));
+};
+
+export async function startIntake(deps: OrchestratorDeps, intent: IntentRow): Promise<void> {
+  const stage = await startStageRow(deps, intent, 'intake');
+  await enqueueJob(deps, intent, stage, payloadOf('intake', await intakePrompt(deps, intent)));
+}
+
+const ACTIVE_STAGE_STATUSES = ['pending', 'running'] as const;
+const ACTIVE_JOB_STATUSES = ['queued', 'offered', 'running'] as const;
+
+export async function retryIntake(
+  deps: OrchestratorDeps,
+  actor: Actor,
+  intent: IntentRow,
+): Promise<IntentRow> {
+  const now = deps.now();
+  const payload = payloadOf('intake', await intakePrompt(deps, intent));
+  const created = await deps.db.transaction(async (tx) => {
+    const [current] = await tx.select().from(intents).where(eq(intents.id, intent.id)).for('update');
+    if (!current) throw new HttpError('NOT_FOUND', 'Intent not found');
+    if (current.status !== 'draft') {
+      throw new HttpError('CONFLICT', `Intent cannot be retried while ${current.status}`);
+    }
+    const [activeStage] = await tx
+      .select({ id: stages.id, status: stages.status })
+      .from(stages)
+      .where(and(eq(stages.intentId, current.id), inArray(stages.status, [...ACTIVE_STAGE_STATUSES])))
+      .limit(1);
+    if (activeStage !== undefined) {
+      throw new HttpError('CONFLICT', 'Intent cannot be retried while an intake stage is active', {
+        stageId: activeStage.id,
+        status: activeStage.status,
+      });
+    }
+    const [activeJob] = await tx
+      .select({ id: jobs.id, status: jobs.status })
+      .from(jobs)
+      .where(and(eq(jobs.intentId, current.id), inArray(jobs.status, [...ACTIVE_JOB_STATUSES])))
+      .limit(1);
+    if (activeJob !== undefined) {
+      throw new HttpError('CONFLICT', 'Intent cannot be retried while a job is active', {
+        jobId: activeJob.id,
+        status: activeJob.status,
+      });
+    }
+    const [stage] = await tx
+      .insert(stages)
+      .values({ intentId: current.id, kind: 'intake', status: 'running', startedAt: now })
+      .returning();
+    if (!stage) throw new Error('stage insert returned no row');
+    const [job] = await tx
+      .insert(jobs)
+      .values({
+        intentId: current.id,
+        stageId: stage.id,
+        runtime: 'auto',
+        status: 'queued',
+        payload,
+        nextAttemptAt: now,
+      })
+      .returning();
+    if (!job) throw new Error('job insert returned no row');
+    return { intent: current, stage, job };
+  });
+  publishStage(deps, created.intent, created.stage);
+  publishJob(deps, created.intent, created.job);
+  await recordAudit(deps.db, {
+    actorKind: 'user',
+    actorId: actor.id,
+    action: 'intent.retry',
+    target: intent.id,
+    meta: {},
+  });
+  return created.intent;
 }
 
 export async function startSpec(deps: OrchestratorDeps, intent: IntentRow): Promise<void> {

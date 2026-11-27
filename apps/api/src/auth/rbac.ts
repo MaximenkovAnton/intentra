@@ -18,11 +18,18 @@ const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 } as const satisfies Record<P
 
 export type ProjectAccess = ProjectRole | 'admin';
 
+export interface IntentAccessOptions {
+  readonly foreignProject?: 'forbidden' | 'notfound';
+}
+
 export interface Guards {
   readonly requireUser: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   readonly requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   readonly projectAccess: (minimum: ProjectRole) => (request: FastifyRequest) => Promise<void>;
-  readonly intentAccess: (minimum: ProjectRole) => (request: FastifyRequest) => Promise<void>;
+  readonly intentAccess: (
+    minimum: ProjectRole,
+    options?: IntentAccessOptions,
+  ) => (request: FastifyRequest) => Promise<void>;
 }
 
 export function currentUser(request: FastifyRequest): AuthUser {
@@ -115,41 +122,47 @@ export function createGuards(db: Database, config: AppConfig, now: () => Date): 
     request.project = project;
   };
 
-  const intentAccess = (minimum: ProjectRole) => async (request: FastifyRequest): Promise<void> => {
-    if (!request.user) throw new HttpError('AUTH_REQUIRED', 'Authentication required');
-    const raw = readPathId(request);
-    const parsed = IdSchema.safeParse(raw);
-    if (!parsed.success) throw new HttpError('VALIDATION', 'Intent id must be a UUID');
-    const [row] = await db
-      .select({ intent: intents, project: projects })
-      .from(intents)
-      .innerJoin(projects, eq(intents.projectId, projects.id))
-      .where(eq(intents.id, parsed.data))
-      .limit(1);
-    if (!row) {
-      if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Intent not found');
-      throw new HttpError('FORBIDDEN', 'Forbidden');
-    }
-    if (row.project.archivedAt) {
-      if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Project archived');
-      throw new HttpError('FORBIDDEN', 'Forbidden');
-    }
-    if (request.user.isAdmin) {
+  const intentAccess =
+    (minimum: ProjectRole, options?: IntentAccessOptions) =>
+    async (request: FastifyRequest): Promise<void> => {
+      if (!request.user) throw new HttpError('AUTH_REQUIRED', 'Authentication required');
+      const raw = readPathId(request);
+      const parsed = IdSchema.safeParse(raw);
+      if (!parsed.success) throw new HttpError('VALIDATION', 'Intent id must be a UUID');
+      const [row] = await db
+        .select({ intent: intents, project: projects })
+        .from(intents)
+        .innerJoin(projects, eq(intents.projectId, projects.id))
+        .where(eq(intents.id, parsed.data))
+        .limit(1);
+      if (!row) {
+        if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Intent not found');
+        throw new HttpError('FORBIDDEN', 'Forbidden');
+      }
+      if (row.project.archivedAt) {
+        if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Project archived');
+        throw new HttpError('FORBIDDEN', 'Forbidden');
+      }
+      if (request.user.isAdmin) {
+        request.intent = row.intent;
+        request.project = row.project;
+        return;
+      }
+      const [membership] = await db
+        .select()
+        .from(projectMembers)
+        .where(
+          and(eq(projectMembers.projectId, row.project.id), eq(projectMembers.userId, request.user.id)),
+        )
+        .limit(1);
+      if (!membership) {
+        if (options?.foreignProject === 'notfound') throw new HttpError('NOT_FOUND', 'Intent not found');
+        throw new HttpError('FORBIDDEN', 'Forbidden');
+      }
+      if (!isAtLeast(membership.role, minimum)) throw new HttpError('FORBIDDEN', 'Forbidden');
       request.intent = row.intent;
       request.project = row.project;
-      return;
-    }
-    const [membership] = await db
-      .select()
-      .from(projectMembers)
-      .where(
-        and(eq(projectMembers.projectId, row.project.id), eq(projectMembers.userId, request.user.id)),
-      )
-      .limit(1);
-    if (!membership || !isAtLeast(membership.role, minimum)) throw new HttpError('FORBIDDEN', 'Forbidden');
-    request.intent = row.intent;
-    request.project = row.project;
-  };
+    };
 
   return { requireUser, requireAdmin, projectAccess, intentAccess };
 }
