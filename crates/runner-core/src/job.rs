@@ -518,7 +518,12 @@ mod tests {
                 &lease(),
             ))
             .unwrap();
-        assert_eq!(accepted.repo.root, dir.path().canonicalize().unwrap());
+        // Canonicalize both sides: `Repo::open` stores the path with the Windows verbatim
+        // prefix stripped, while `Path::canonicalize` adds it back on Windows.
+        assert_eq!(
+            accepted.repo.root.canonicalize().unwrap(),
+            dir.path().canonicalize().unwrap()
+        );
     }
 
     #[tokio::test]
