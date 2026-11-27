@@ -20,7 +20,6 @@ time.workspace = true
 getrandom.workspace = true
 reqwest.workspace = true
 ed25519-dalek.workspace = true
-self-replace.workspace = true
 tree-sitter.workspace = true
 tree-sitter-typescript.workspace = true
 tree-sitter-javascript.workspace = true
@@ -34,6 +33,7 @@ flate2.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 zip.workspace = true
+self-replace.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
