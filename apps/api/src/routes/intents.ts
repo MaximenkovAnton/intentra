@@ -282,7 +282,7 @@ export function registerIntentRoutes(app: FastifyInstance, deps: AppDeps, guards
   typed.post(
     '/api/intents/:id/retry',
     {
-      preHandler: [guards.requireUser, guards.intentAccess('editor', { foreignProject: 'notfound' })],
+      preHandler: [guards.requireUser, guards.intentAccess('editor', { hidden: 'notfound' })],
       schema: {
         params: IntentParams,
         response: {

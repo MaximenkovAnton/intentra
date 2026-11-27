@@ -44,8 +44,6 @@ const draftRoutes = (role: "owner" | "editor" | "viewer") => ({
     jsonResponse({ items: [member(role)], nextCursor: null }),
   [`GET /api/intents/${intentId}/evidence`]: () =>
     jsonResponse({ ...buildEvidence, stages: [failedIntakeStage] }),
-  [`POST /api/intents/${intentId}/retry`]: () =>
-    jsonResponse({ ...intentDetail.intent, status: "draft" }),
 })
 
 const STATUSES_WITHOUT_REWORK = [

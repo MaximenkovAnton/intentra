@@ -55,6 +55,8 @@ import {
   enqueueJob,
   finishJob,
   finishStageRow,
+  insertJob,
+  insertStageRow,
   jobPayloadOf,
   loadIntent,
   loadStage,
@@ -186,23 +188,8 @@ export async function retryIntake(
         status: activeJob.status,
       });
     }
-    const [stage] = await tx
-      .insert(stages)
-      .values({ intentId: current.id, kind: 'intake', status: 'running', startedAt: now })
-      .returning();
-    if (!stage) throw new Error('stage insert returned no row');
-    const [job] = await tx
-      .insert(jobs)
-      .values({
-        intentId: current.id,
-        stageId: stage.id,
-        runtime: 'auto',
-        status: 'queued',
-        payload,
-        nextAttemptAt: now,
-      })
-      .returning();
-    if (!job) throw new Error('job insert returned no row');
+    const stage = await insertStageRow(tx, current, 'intake', now);
+    const job = await insertJob(tx, current, stage, payload, now);
     return { intent: current, stage, job };
   });
   publishStage(deps, created.intent, created.stage);

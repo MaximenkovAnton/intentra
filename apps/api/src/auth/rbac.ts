@@ -19,7 +19,7 @@ const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 } as const satisfies Record<P
 export type ProjectAccess = ProjectRole | 'admin';
 
 export interface IntentAccessOptions {
-  readonly foreignProject?: 'forbidden' | 'notfound';
+  readonly hidden?: 'forbidden' | 'notfound';
 }
 
 export interface Guards {
@@ -126,6 +126,7 @@ export function createGuards(db: Database, config: AppConfig, now: () => Date): 
     (minimum: ProjectRole, options?: IntentAccessOptions) =>
     async (request: FastifyRequest): Promise<void> => {
       if (!request.user) throw new HttpError('AUTH_REQUIRED', 'Authentication required');
+      const hidden = options?.hidden === 'notfound';
       const raw = readPathId(request);
       const parsed = IdSchema.safeParse(raw);
       if (!parsed.success) throw new HttpError('VALIDATION', 'Intent id must be a UUID');
@@ -136,11 +137,12 @@ export function createGuards(db: Database, config: AppConfig, now: () => Date): 
         .where(eq(intents.id, parsed.data))
         .limit(1);
       if (!row) {
-        if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Intent not found');
+        if (request.user.isAdmin || hidden) throw new HttpError('NOT_FOUND', 'Intent not found');
         throw new HttpError('FORBIDDEN', 'Forbidden');
       }
       if (row.project.archivedAt) {
         if (request.user.isAdmin) throw new HttpError('NOT_FOUND', 'Project archived');
+        if (hidden) throw new HttpError('NOT_FOUND', 'Intent not found');
         throw new HttpError('FORBIDDEN', 'Forbidden');
       }
       if (request.user.isAdmin) {
@@ -156,7 +158,7 @@ export function createGuards(db: Database, config: AppConfig, now: () => Date): 
         )
         .limit(1);
       if (!membership) {
-        if (options?.foreignProject === 'notfound') throw new HttpError('NOT_FOUND', 'Intent not found');
+        if (hidden) throw new HttpError('NOT_FOUND', 'Intent not found');
         throw new HttpError('FORBIDDEN', 'Forbidden');
       }
       if (!isAtLeast(membership.role, minimum)) throw new HttpError('FORBIDDEN', 'Forbidden');
