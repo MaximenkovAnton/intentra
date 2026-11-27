@@ -65,3 +65,11 @@ findings, metadata and a content-free diff summary — see
 
 `AGENTS.md` holds the coding conventions (ESM/NodeNext, strict TypeScript, Zod at boundaries,
 CSS tokens, i18n, Rust gates).
+
+## License
+
+Proprietary. Copyright (c) 2026 Anton Maksimenkau, all rights reserved. The
+source is publicly available for viewing and evaluation only; no license to
+use, modify or distribute it is granted. External contributions are accepted
+only under the terms in [`CONTRIBUTING.md`](CONTRIBUTING.md); see
+[`LICENSE`](LICENSE).
