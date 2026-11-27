@@ -40,6 +40,9 @@ COPY --from=build --chown=intentra:intentra /repo/node_modules ./node_modules
 COPY --from=build --chown=intentra:intentra /repo/packages/contracts ./packages/contracts
 COPY --from=build --chown=intentra:intentra /repo/apps/api ./apps/api
 
+ARG GIT_REVISION=unknown
+LABEL org.opencontainers.image.revision=$GIT_REVISION
+
 USER intentra
 EXPOSE 8080
 CMD ["node", "apps/api/dist/server.js"]
