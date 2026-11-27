@@ -1,0 +1,248 @@
+name: Release
+
+# Tags are created by a human on main; this workflow never creates one.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: "true"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  gate:
+    name: Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: intentra
+          POSTGRES_PASSWORD: intentra
+          POSTGRES_DB: intentra_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U intentra -d intentra_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://intentra:intentra@localhost:5432/intentra_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require the tag to be on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -w typecheck
+
+      - name: Lint
+        run: pnpm -w lint
+
+      - name: Test
+        run: pnpm -w test
+
+      - name: Build
+        run: pnpm -w build
+
+      - name: Release scripts
+        run: pnpm -w test:release
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: gate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            cargo: cargo zigbuild
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            cargo: cargo zigbuild
+          - target: x86_64-apple-darwin
+            os: macos-13
+            cargo: cargo build
+          - target: aarch64-apple-darwin
+            os: macos-14
+            cargo: cargo build
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            cargo: cargo build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Set up Zig
+        if: matrix.os == 'ubuntu-latest'
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+
+      - name: Install cargo-zigbuild
+        if: matrix.os == 'ubuntu-latest'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+          fallback: none
+
+      - name: Package
+        shell: bash
+        env:
+          CARGO_COMMAND: ${{ matrix.cargo }}
+        run: scripts/release/package.sh "${{ matrix.target }}"
+
+      - name: Upload the archive and its checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: intentra-runner-${{ matrix.target }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+      CENTER_URL: ${{ vars.CENTER_URL }}
+      CENTER_RELEASE_TOKEN: ${{ secrets.CENTER_RELEASE_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the shared contracts
+        run: pnpm --filter @intentra/contracts build
+
+      - name: Download the archives
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/release
+          merge-multiple: true
+
+      - name: Resolve the release version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build and sign the update manifest
+        run: >-
+          node scripts/release/manifest.mjs
+          --version "$VERSION"
+          --assets dist/release
+          --out dist/release
+          --notes-out dist/release/release-notes.md
+
+      - name: Create the GitHub release
+        run: |
+          gh release create "v$VERSION" \
+            --verify-tag \
+            --title "v$VERSION" \
+            --notes-file dist/release/release-notes.md \
+            dist/release/intentra-runner-*.tar.gz* \
+            dist/release/intentra-runner-*.zip* \
+            dist/release/update-manifest.json \
+            dist/release/update-manifest.json.sig
+
+      - name: Publish the release to the control plane
+        if: env.CENTER_URL != '' && env.CENTER_RELEASE_TOKEN != ''
+        run: |
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const manifest = readFileSync("dist/release/update-manifest.json", "utf8");
+            const signature = readFileSync("dist/release/update-manifest.json.sig", "utf8").trim();
+            const url = `${process.env.CENTER_URL.replace(/\/$/, "")}/api/admin/releases`;
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${process.env.CENTER_RELEASE_TOKEN}`,
+              },
+              body: JSON.stringify({ manifest, signature }),
+            });
+            if (!response.ok) {
+              console.error(`centre rejected the release: ${response.status} ${await response.text()}`);
+              process.exit(1);
+            }
+            console.log(`centre accepted the release: ${response.status}`);
+          '
