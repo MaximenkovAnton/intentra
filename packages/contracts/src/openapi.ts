@@ -41,6 +41,15 @@ import { DecisionSchema } from './decision.js';
 import { EvidenceSchema } from './evidence.js';
 import { EscalationSchema } from './escalation.js';
 import { MemoryGraphSchema, MemorySearchQuerySchema, MemorySearchResultSchema } from './memory.js';
+import {
+  ReleasePublishInputSchema,
+  ReleaseSchema,
+  RunnerUpdateSchema,
+  UpdateAssetSchema,
+  UpdateManifestSchema,
+  UpdatePolicyInputSchema,
+  UpdateReportInputSchema,
+} from './release.js';
 
 const ProjectParams = z.object({ key: ProjectKeySchema });
 const RunnerParams = z.object({ id: IdSchema });
@@ -106,6 +115,13 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
   registry.register('GateStatus', GateStatusSchema);
   registry.register('ClaimCheck', ClaimCheckSchema);
   registry.register('VerifyReport', VerifyReportSchema);
+  registry.register('UpdateAsset', UpdateAssetSchema);
+  registry.register('UpdateManifest', UpdateManifestSchema);
+  registry.register('ReleasePublishInput', ReleasePublishInputSchema);
+  registry.register('RunnerUpdate', RunnerUpdateSchema);
+  registry.register('UpdatePolicyInput', UpdatePolicyInputSchema);
+  registry.register('UpdateReportInput', UpdateReportInputSchema);
+  registry.register('Release', ReleaseSchema);
 
   registry.registerPath({
     method: 'get',

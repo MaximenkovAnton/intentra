@@ -3372,6 +3372,300 @@
         "required": [
           "gates"
         ]
+      },
+      "UpdateAsset": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "x86_64-unknown-linux-gnu",
+              "aarch64-unknown-linux-gnu",
+              "x86_64-apple-darwin",
+              "aarch64-apple-darwin",
+              "x86_64-pc-windows-msvc"
+            ]
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "target",
+          "fileName",
+          "url",
+          "sizeBytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateManifest": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "protocolVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "target": {
+                  "type": "string",
+                  "enum": [
+                    "x86_64-unknown-linux-gnu",
+                    "aarch64-unknown-linux-gnu",
+                    "x86_64-apple-darwin",
+                    "aarch64-apple-darwin",
+                    "x86_64-pc-windows-msvc"
+                  ]
+                },
+                "fileName": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "sizeBytes": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "target",
+                "fileName",
+                "url",
+                "sizeBytes",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 5,
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "version",
+          "channel",
+          "protocolVersion",
+          "publishedAt",
+          "notes",
+          "assets"
+        ],
+        "additionalProperties": false
+      },
+      "ReleasePublishInput": {
+        "type": "object",
+        "properties": {
+          "manifest": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9+/]{86}==$"
+          }
+        },
+        "required": [
+          "manifest",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "RunnerUpdate": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "latestVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "pinnedVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "autoUpdate": {
+            "type": "boolean"
+          },
+          "manifest": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9+/]{86}==$"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "channel",
+          "latestVersion",
+          "pinnedVersion",
+          "autoUpdate"
+        ],
+        "additionalProperties": false
+      },
+      "UpdatePolicyInput": {
+        "type": "object",
+        "properties": {
+          "pinnedVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "autoUpdate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pinnedVersion",
+          "autoUpdate"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateReportInput": {
+        "type": "object",
+        "properties": {
+          "fromVersion": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "toVersion": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "rolled_back",
+              "failed"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fromVersion",
+          "toVersion",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "Release": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "protocolVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "yanked": {
+            "type": "boolean"
+          },
+          "manifest": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9+/]{86}==$"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "channel",
+          "protocolVersion",
+          "publishedAt",
+          "yanked",
+          "manifest",
+          "signature",
+          "notes"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
