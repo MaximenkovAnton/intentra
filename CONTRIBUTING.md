@@ -30,5 +30,5 @@ close pull requests that do not accept the CLA.
 ## Review and gates
 
 A pull request is merged only after the CI checks pass (`Node · typecheck,
-lint, test, build` and `Rust · ubuntu-latest`, `Rust · macos-latest`,
-`Rust · windows-latest`) and a maintainer approves the change.
+lint, test, build`, `Rust · ubuntu-latest`, `Rust · macos-latest`,
+`Rust · windows-latest` and `CLA Signed`) and a maintainer approves the change.
