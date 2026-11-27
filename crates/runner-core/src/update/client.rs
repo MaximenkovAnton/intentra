@@ -9,10 +9,13 @@ use sha2::{Digest, Sha256};
 use crate::config::Channel;
 use crate::update::UpdateError;
 use crate::update::manifest::{RunnerUpdate, UpdateAsset};
+use crate::update::sanitize_for_log;
 use crate::util::tail;
 
 pub const ARTIFACT_MAX_BYTES: u64 = 256 * 1024 * 1024;
+pub const JSON_MAX_BYTES: u64 = 1024 * 1024;
 
+const ERROR_MESSAGE_MAX_CHARS: usize = 512;
 const JSON_TIMEOUT: Duration = Duration::from_secs(30);
 const ARTIFACT_TIMEOUT: Duration = Duration::from_secs(300);
 
@@ -30,6 +33,8 @@ pub enum UpdateClientError {
     Request(#[from] reqwest::Error),
     #[error("the control plane rejected the update request with HTTP {status}: {message}")]
     Rejected { status: u16, message: String },
+    #[error("the control plane response body is larger than {limit} bytes")]
+    ResponseTooLarge { limit: u64 },
     #[error("the control plane returned an invalid update response: {0}")]
     Response(String),
     #[error("invalid update response: {0}")]
@@ -151,6 +156,17 @@ pub struct UpdateClient {
     token: String,
 }
 
+fn build_http(
+    allow_insecure_http: bool,
+    root: Option<reqwest::Certificate>,
+) -> Result<reqwest::Client, UpdateClientError> {
+    let mut builder = reqwest::Client::builder().https_only(!allow_insecure_http);
+    if let Some(root) = root {
+        builder = builder.add_root_certificate(root);
+    }
+    Ok(builder.build()?)
+}
+
 impl UpdateClient {
     pub fn new(
         server_url: &str,
@@ -158,7 +174,7 @@ impl UpdateClient {
         allow_insecure_http: bool,
     ) -> Result<UpdateClient, UpdateClientError> {
         Ok(UpdateClient {
-            http: reqwest::Client::builder().build()?,
+            http: build_http(allow_insecure_http, None)?,
             endpoints: UpdateEndpoints::derive(server_url, allow_insecure_http)?,
             token: token.into(),
         })
@@ -204,10 +220,10 @@ impl UpdateClient {
             .await?;
         let status = response.status();
         if !status.is_success() {
-            let body = response.text().await.unwrap_or_default();
+            let message = error_message(&read_error_body(response).await?);
             return Err(UpdateClientError::Rejected {
                 status: status.as_u16(),
-                message: tail(body.trim(), 512),
+                message,
             });
         }
         if let Some(parent) = staging.parent() {
@@ -236,13 +252,51 @@ impl UpdateClient {
 async fn success_body(response: reqwest::Response) -> Result<Vec<u8>, UpdateClientError> {
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().await.unwrap_or_default();
+        let message = error_message(&read_error_body(response).await?);
         return Err(UpdateClientError::Rejected {
             status: status.as_u16(),
-            message: tail(body.trim(), 512),
+            message,
         });
     }
-    Ok(response.bytes().await?.to_vec())
+    read_success_body(response).await
+}
+
+async fn read_success_body(response: reqwest::Response) -> Result<Vec<u8>, UpdateClientError> {
+    if let Some(length) = response.content_length()
+        && length > JSON_MAX_BYTES
+    {
+        return Err(UpdateClientError::ResponseTooLarge {
+            limit: JSON_MAX_BYTES,
+        });
+    }
+    let mut body = Vec::new();
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        body.extend_from_slice(&chunk?);
+        if body.len() as u64 > JSON_MAX_BYTES {
+            return Err(UpdateClientError::ResponseTooLarge {
+                limit: JSON_MAX_BYTES,
+            });
+        }
+    }
+    Ok(body)
+}
+
+async fn read_error_body(response: reqwest::Response) -> Result<Vec<u8>, UpdateClientError> {
+    let mut body = Vec::new();
+    let mut stream = response.bytes_stream();
+    while body.len() < JSON_MAX_BYTES as usize
+        && let Some(chunk) = stream.next().await
+    {
+        body.extend_from_slice(&chunk?);
+    }
+    body.truncate(JSON_MAX_BYTES as usize);
+    Ok(body)
+}
+
+fn error_message(body: &[u8]) -> String {
+    let text = String::from_utf8_lossy(body);
+    tail(&sanitize_for_log(text.trim()), ERROR_MESSAGE_MAX_CHARS - 1)
 }
 
 async fn stream_artifact(
@@ -279,8 +333,26 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(test)]
+mod redirect_tests;
+#[cfg(test)]
+mod stub;
+
+#[cfg(test)]
 mod tests {
+    use super::stub::{StubCenter, StubResponse};
     use super::*;
+
+    const FIVE_SECONDS: Duration = Duration::from_secs(5);
+
+    fn json_stub(status: u16, content_length: Option<usize>, body: Vec<u8>) -> StubResponse {
+        StubResponse {
+            status,
+            content_type: "application/json",
+            content_length,
+            body,
+            hold_open: true,
+        }
+    }
 
     #[test]
     fn derives_update_endpoints() {
@@ -337,5 +409,110 @@ mod tests {
         assert_eq!(value["toVersion"], "0.2.0");
         assert_eq!(value["status"], "rolled_back");
         assert_eq!(value["reason"], "self-check failed");
+    }
+
+    fn client(stub: &StubCenter) -> UpdateClient {
+        UpdateClient::new(&stub.url(), "runner-secret", true).unwrap()
+    }
+
+    #[tokio::test]
+    async fn rejects_a_declared_oversized_update_body() {
+        assert_eq!(JSON_MAX_BYTES, 1_048_576);
+        let stub = StubCenter::start(vec![json_stub(
+            200,
+            Some(2 * JSON_MAX_BYTES as usize),
+            Vec::new(),
+        )])
+        .await;
+        let error =
+            tokio::time::timeout(FIVE_SECONDS, client(&stub).update("0.1.0", Channel::Stable))
+                .await
+                .expect("the declared body size is rejected before reading")
+                .unwrap_err();
+        assert!(matches!(
+            error,
+            UpdateClientError::ResponseTooLarge { limit } if limit == JSON_MAX_BYTES
+        ));
+    }
+
+    #[tokio::test]
+    async fn stops_a_streamed_update_body_at_the_limit() {
+        let stub = StubCenter::start(vec![json_stub(
+            200,
+            None,
+            vec![b'x'; JSON_MAX_BYTES as usize + 1],
+        )])
+        .await;
+        let error =
+            tokio::time::timeout(FIVE_SECONDS, client(&stub).update("0.1.0", Channel::Stable))
+                .await
+                .expect("the streamed body is stopped at the limit")
+                .unwrap_err();
+        assert!(matches!(
+            error,
+            UpdateClientError::ResponseTooLarge { limit } if limit == JSON_MAX_BYTES
+        ));
+    }
+
+    #[tokio::test]
+    async fn caps_the_error_body_of_a_failed_update() {
+        let body: Vec<u8> = (0..JSON_MAX_BYTES as usize)
+            .map(|index| if index % 2 == 0 { b'\x1b' } else { b'\x07' })
+            .collect();
+        let stub = StubCenter::start(vec![json_stub(
+            500,
+            Some(2 * JSON_MAX_BYTES as usize),
+            body,
+        )])
+        .await;
+        let error =
+            tokio::time::timeout(FIVE_SECONDS, client(&stub).update("0.1.0", Channel::Stable))
+                .await
+                .expect("the error body is capped at the limit")
+                .unwrap_err();
+        match error {
+            UpdateClientError::Rejected { status, message } => {
+                assert_eq!(status, 500);
+                assert!(
+                    message.chars().count() <= 512,
+                    "the message keeps {} characters",
+                    message.chars().count()
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn rejects_an_oversized_report_body() {
+        let stub = StubCenter::start(vec![json_stub(
+            200,
+            Some(2 * JSON_MAX_BYTES as usize),
+            Vec::new(),
+        )])
+        .await;
+        let report = UpdateReport::new("0.1.0", "0.2.0", UpdateStatus::Applied, None);
+        let error = tokio::time::timeout(FIVE_SECONDS, client(&stub).report(&report))
+            .await
+            .expect("the declared report body size is rejected before reading")
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            UpdateClientError::ResponseTooLarge { limit } if limit == JSON_MAX_BYTES
+        ));
+    }
+
+    #[tokio::test]
+    async fn sanitizes_control_characters_in_the_error_message() {
+        let body = b"\x1b]0;pwned\x07".to_vec();
+        let stub = StubCenter::start(vec![json_stub(500, Some(body.len()), body)]).await;
+        let error = client(&stub)
+            .update("0.1.0", Channel::Stable)
+            .await
+            .unwrap_err();
+        let display = error.to_string();
+        assert!(display.starts_with("the control plane rejected the update request with HTTP 500"));
+        assert!(display.contains("\\u{1b}]0;pwned\\u{7}"), "{display}");
+        assert!(!display.chars().any(char::is_control), "{display}");
     }
 }

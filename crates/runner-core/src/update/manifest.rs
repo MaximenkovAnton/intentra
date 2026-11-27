@@ -160,7 +160,13 @@ impl UpdateManifest {
     }
 }
 
+pub const AUTO_UPDATE_DISABLED_REASON: &str = "auto-updates are disabled for this runner (autoUpdate=false); enable auto-update in the centre before applying";
+
 impl RunnerUpdate {
+    pub fn apply_blocker(&self) -> Option<&'static str> {
+        (!self.auto_update).then_some(AUTO_UPDATE_DISABLED_REASON)
+    }
+
     pub fn validate(&self) -> Result<(), UpdateError> {
         if self.available {
             let manifest = self

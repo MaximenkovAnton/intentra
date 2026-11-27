@@ -595,7 +595,7 @@ async fn roll_back(
                 "{reason}; the previous binary could not be restored: {error}"
             )),
         );
-        deliver_report(request.client, &report).await;
+        report_outcome(request.client, Some(&report)).await;
         return Some(report);
     }
     state.clear_pending();
@@ -608,17 +608,18 @@ async fn roll_back(
         UpdateStatus::RolledBack,
         Some(reason),
     );
-    deliver_report(request.client, &report).await;
+    report_outcome(request.client, Some(&report)).await;
     if let Err(error) = request.restarter.restart() {
         tracing::error!(error = %error, "cannot restart the previous runner");
     }
     Some(report)
 }
 
-async fn deliver_report(client: Option<&UpdateClient>, report: &UpdateReport) {
-    if let Some(client) = client
-        && let Err(error) = client.report(report).await
-    {
+pub async fn report_outcome(client: Option<&UpdateClient>, report: Option<&UpdateReport>) {
+    let (Some(client), Some(report)) = (client, report) else {
+        return;
+    };
+    if let Err(error) = client.report(report).await {
         tracing::warn!(error = %error, "could not report the update outcome to the center");
     }
 }
