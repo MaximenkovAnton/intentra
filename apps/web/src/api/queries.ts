@@ -316,6 +316,17 @@ export const useAcceptIntent = (intentId: string) => {
   })
 }
 
+export const useRetryIntent = (intentId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      unwrapResponse(api.POST("/api/intents/{id}/retry", { params: { path: { id: intentId } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.intents })
+    },
+  })
+}
+
 export const useReworkIntent = (intentId: string) => {
   const queryClient = useQueryClient()
   return useMutation({

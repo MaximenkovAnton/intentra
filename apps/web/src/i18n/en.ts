@@ -209,6 +209,10 @@ export const en: typeof ru = {
         build: "Build",
         plan: "Plan",
       },
+      retry: "Retry launch",
+    },
+    failure: {
+      title: "Why the intent is not running",
     },
     office: {
       cardTitle: "Intent card",
