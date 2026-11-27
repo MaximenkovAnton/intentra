@@ -70,14 +70,19 @@ These cover `crates/runner-core` and `crates/runner`; the contract fixtures live
 ```bash
 cp infra/compose/.env.example infra/compose/.env   # then fill in the values
 docker compose -f infra/compose/docker-compose.yml config
-docker compose -f infra/compose/docker-compose.yml up --build
+docker compose -f infra/compose/docker-compose.yml up --build   # first bring-up only
 ```
 
-`migrate` runs once and must succeed before `api` starts; `web` waits for the api healthcheck and
-serves the SPA on `http://localhost:${WEB_PORT:-8090}` (one origin, `/api` and `/api/events`
-proxied). Postgres, Pocket ID and the memory services are external; set their URLs in the same
-`.env` file. `.env` is gitignored. Prometheus scrapes the api from inside the compose network at
-`http://api:8080/metrics`; the endpoint is deliberately not exposed through the single origin.
+Updates on a live host use the rolling path, never `up -d --build`:
+`scripts/deploy.sh --check`, then `scripts/deploy.sh` (see
+[`docs/operations/deploy.md`](../operations/deploy.md)).
+
+`migrate` runs once and must succeed before `api` starts; `web` waits for the api healthcheck,
+`ingress` publishes the single origin on `http://localhost:${WEB_PORT:-8090}` and proxies to web
+(`/api` and `/api/events` reach api through web). Postgres, Pocket ID and the memory services are
+external; set their URLs in the same `.env` file. `.env` is gitignored. Prometheus scrapes the
+api from inside the compose network at `http://api:8080/metrics`; the endpoint is deliberately
+not exposed through the single origin.
 
 When Pocket ID serves a private/self-signed certificate, copy its CA into the compose
 directory and add the overlay so the api container trusts it:
