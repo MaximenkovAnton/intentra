@@ -19,6 +19,7 @@ regex.workspace = true
 time.workspace = true
 getrandom.workspace = true
 reqwest.workspace = true
+ed25519-dalek.workspace = true
 tree-sitter.workspace = true
 tree-sitter-typescript.workspace = true
 tree-sitter-javascript.workspace = true

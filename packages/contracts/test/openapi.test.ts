@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildOpenApiDocument } from '../src/index.js';
 
@@ -47,5 +49,24 @@ describe('OpenAPI 3.1 document', () => {
       name: 'intentra_session',
     });
     expect(document.components?.schemas?.ApiError).toBeDefined();
+  });
+
+  it('registers the release schemas as OpenAPI components', () => {
+    for (const name of [
+      'UpdateAsset',
+      'UpdateManifest',
+      'ReleasePublishInput',
+      'RunnerUpdate',
+      'UpdatePolicyInput',
+      'UpdateReportInput',
+      'Release',
+    ]) {
+      expect(document.components?.schemas?.[name]).toBeDefined();
+    }
+  });
+
+  it('keeps the committed openapi.json in sync with the generator', () => {
+    const committed = readFileSync(fileURLToPath(new URL('../openapi.json', import.meta.url)), 'utf8');
+    expect(committed).toBe(`${JSON.stringify(document, null, 2)}\n`);
   });
 });

@@ -19,4 +19,5 @@ export * from './job.js';
 export * from './verify.js';
 export * from './memory.js';
 export * from './events.js';
+export * from './release.js';
 export * from './openapi.js';
