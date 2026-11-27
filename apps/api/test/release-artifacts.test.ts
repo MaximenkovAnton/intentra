@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdir, mkdtemp, readdir, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -209,6 +209,55 @@ describe.skipIf(!hasDatabase)('release artifacts', () => {
       await timingOut.close();
       await rm(timeoutDir, { recursive: true, force: true });
     }
+  });
+
+  it('classifies_a_local_cache_failure_as_500', async () => {
+    const bytes = Buffer.from('rename phase failure bytes');
+    const release = releaseBody(bytes, '0.2.9');
+    await publish(release);
+    const { token } = await runnerWithToken();
+    const deferred = source.pushDeferred();
+
+    const pending = getArtifact(release.fileName, token);
+    await vi.waitFor(() => expect(source.calls).toHaveLength(1));
+    await mkdir(join(cacheDir, release.sha256), { recursive: true });
+    deferred.resolve(bytes);
+
+    const response = await pending;
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ code: 'INTERNAL', message: 'release cache is unavailable' });
+    expect(response.body).not.toContain(cacheDir);
+    expect((await readdir(cacheDir)).some((entry) => entry.startsWith('.tmp-'))).toBe(false);
+  });
+
+  it('reports_a_corrupt_cache_entry_as_500', async () => {
+    const bytes = Buffer.from('corrupt cache entry bytes');
+    const release = releaseBody(bytes, '0.2.10');
+    await publish(release);
+    const { token } = await runnerWithToken();
+    source.push(bytes);
+    await mkdir(join(cacheDir, release.sha256), { recursive: true });
+
+    const response = await getArtifact(release.fileName, token);
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ code: 'INTERNAL', message: 'release cache is unavailable' });
+    expect(response.body).not.toContain(cacheDir);
+    expect(source.calls).toHaveLength(0);
+  });
+
+  it('reports_an_uncreatable_cache_directory_as_500', async () => {
+    const bytes = Buffer.from('uncreatable cache directory bytes');
+    const release = releaseBody(bytes, '0.2.11');
+    await publish(release);
+    const { token } = await runnerWithToken();
+    source.push(bytes);
+    await rm(cacheDir, { recursive: true, force: true });
+    await symlink(join(tmpdir(), `intentra-missing-${randomUUID()}`), cacheDir);
+
+    const response = await getArtifact(release.fileName, token);
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ code: 'INTERNAL', message: 'release cache is unavailable' });
+    expect(response.body).not.toContain(cacheDir);
   });
 
   it('answers 404 for an unknown or yanked artifact', async () => {

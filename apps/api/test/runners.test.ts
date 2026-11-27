@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { desc, eq } from 'drizzle-orm';
+import { PROTOCOL_VERSION } from '@intentra/contracts';
 import {
   authCookie,
   createHarness,
@@ -11,13 +12,15 @@ import {
   sha256,
   type Harness,
 } from './harness.js';
-import { auditLog, projectRunners, runnerRegistrationTokens, runners } from '../src/db/schema.js';
+import { MANIFEST, SIGNATURE, seedRunner } from './release-helpers.js';
+import { auditLog, projectRunners, releases, runnerRegistrationTokens, runners } from '../src/db/schema.js';
 
 describe.skipIf(!hasDatabase)('runner registry', () => {
   let harness: Harness;
+  const queries: string[] = [];
 
   beforeAll(async () => {
-    harness = await createHarness();
+    harness = await createHarness({}, { queryLog: (query) => queries.push(query) });
   });
   afterAll(async () => {
     await harness.close();
@@ -130,6 +133,55 @@ describe.skipIf(!hasDatabase)('runner registry', () => {
     });
     expect(outsiderList.json<{ items: unknown[] }>().items).toHaveLength(0);
     expect(project.id).toBeTruthy();
+  });
+
+  it('lists runners without a per-runner releases query', async () => {
+    const { admin, cookie } = await setup();
+    await harness.db.insert(releases).values({
+      version: '0.2.0',
+      channel: 'stable',
+      protocolVersion: PROTOCOL_VERSION,
+      manifest: MANIFEST,
+      signature: SIGNATURE,
+      notes: '',
+      publishedAt: new Date('2026-11-27T18:00:00Z'),
+    });
+    const plain = await seedRunner(harness.db, { ownerUserId: admin.id, version: '0.1.0' });
+    const pinned = await seedRunner(harness.db, { ownerUserId: admin.id, version: '0.1.0' });
+    await harness.db.update(runners).set({ pinnedVersion: '0.2.0' }).where(eq(runners.id, pinned.runner.id));
+    const disabled = await seedRunner(harness.db, { ownerUserId: admin.id, version: '0.1.0' });
+    await harness.db.update(runners).set({ autoUpdate: false }).where(eq(runners.id, disabled.runner.id));
+
+    queries.length = 0;
+    const response = await harness.app.inject({ method: 'GET', url: '/api/runners', headers: cookie });
+    expect(response.statusCode).toBe(200);
+    expect(queries.filter((query) => query.includes('from "releases"'))).toHaveLength(1);
+
+    const items = response.json<{
+      items: {
+        id: string;
+        latestVersion: string | null;
+        updateAvailable: boolean;
+        autoUpdate: boolean;
+        pinnedVersion: string | null;
+      }[];
+    }>().items;
+    const byId = new Map(items.map((item) => [item.id, item]));
+    expect(byId.get(plain.runner.id)).toMatchObject({
+      latestVersion: '0.2.0',
+      updateAvailable: true,
+      autoUpdate: true,
+    });
+    expect(byId.get(pinned.runner.id)).toMatchObject({
+      latestVersion: '0.2.0',
+      updateAvailable: true,
+      pinnedVersion: '0.2.0',
+    });
+    expect(byId.get(disabled.runner.id)).toMatchObject({
+      latestVersion: '0.2.0',
+      updateAvailable: false,
+      autoUpdate: false,
+    });
   });
 
   it('paginates runners with the shared opaque cursor encoding', async () => {

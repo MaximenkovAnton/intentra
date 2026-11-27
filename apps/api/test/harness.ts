@@ -60,6 +60,7 @@ export interface HarnessOptions {
   readonly releaseArtifactSource?: ArtifactSource;
   readonly releaseCacheDir?: string;
   readonly releaseFetchTimeoutMs?: number;
+  readonly queryLog?: (query: string) => void;
 }
 
 export async function createHarness(
@@ -68,6 +69,11 @@ export async function createHarness(
 ): Promise<Harness> {
   const config = loadConfig(baseEnv(overrides));
   const { db, pool } = createDatabase(config.databaseUrl);
+  const queryLog = options.queryLog;
+  if (queryLog !== undefined) {
+    const session = db._.session as unknown as { logger: { logQuery: (query: string) => void } };
+    session.logger = { logQuery: (query) => queryLog(query) };
+  }
   const oidc = config.oidc ? await createOidcService(config.oidc, config.publicUrl) : null;
   const events = new EventBus();
   const owned = options.memory === undefined ? createMemory({ config, db, logger: createLogger('silent'), now: () => new Date() }) : null;

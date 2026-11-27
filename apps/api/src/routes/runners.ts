@@ -191,20 +191,18 @@ export function registerRunnerRoutes(app: FastifyInstance, deps: AppDeps, guards
       for (const event of events) {
         if (!lastUpdateByRunner.has(event.runnerId)) lastUpdateByRunner.set(event.runnerId, event);
       }
-      const items = await Promise.all(
-        page.map(async (row) => {
-          const update = await deps.releases.resolveUpdate({
-            runner: row.runner,
-            channel: 'stable',
-            current: null,
-          });
-          return toRunnerDto(row.runner, {
-            latestVersion: update.latestVersion,
-            updateAvailable: update.available,
-            lastUpdate: lastUpdateByRunner.get(row.runner.id) ?? null,
-          });
-        }),
+      const updates = await deps.releases.resolveUpdates(
+        page.map((row) => ({ runner: row.runner, channel: 'stable', current: null })),
       );
+      const items = page.map((row) => {
+        const update = updates.get(row.runner.id);
+        if (update === undefined) throw new HttpError('INTERNAL', 'runner update resolution is missing');
+        return toRunnerDto(row.runner, {
+          latestVersion: update.latestVersion,
+          updateAvailable: update.available,
+          lastUpdate: lastUpdateByRunner.get(row.runner.id) ?? null,
+        });
+      });
       return { items, nextCursor };
     },
   );
