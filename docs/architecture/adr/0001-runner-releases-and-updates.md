@@ -45,14 +45,17 @@ Fastify service that may have limited or no egress to GitHub.
    without archive digests would let the storage layer swap a binary after signing.
 
 4. **Automatic application is on by default, disabled per host by `[update] enabled = false`,
-   deferred while work exists, and reversible.** The daemon applies an offered release only when no
-   job is running, reserved or being accepted; the apply and job-acceptance paths share one gate. It backs up the running executable to
-   `<exe>.prev`, records the pending update in `update-state.json`, then replaces and restarts the
-   binary. The new process self-checks (config, token, git) and must confirm through `hello`;
-   failure, or a start that does not confirm, restores `.prev` and reports `rolled_back`.
-   Alternatives rejected: a supervisor/PID-1 restart (the platform may be Windows and there is no
-   supervisor contract), and applying between jobs without a backup (a failed new binary would
-   leave a machine that cannot run jobs).
+   gated per runner by the centre's `autoUpdate` policy, deferred while work exists, and
+   reversible.** When `autoUpdate` is false the centre answers `available: false` without a
+   manifest or signature (a pin does not bypass it), and the runner checks the flag again before
+   downloading or applying, including `update --apply`. The daemon applies an offered release only
+   when no job is running, reserved or being accepted; the apply and job-acceptance paths share one
+   gate. It backs up the running executable to `<exe>.prev`, records the pending update in
+   `update-state.json`, then replaces and restarts the binary. The new process self-checks (config,
+   token, git) and must confirm through `hello`; failure, or a start that does not confirm,
+   restores `.prev` and reports `rolled_back`. Alternatives rejected: a supervisor/PID-1 restart
+   (the platform may be Windows and there is no supervisor contract), and applying between jobs
+   without a backup (a failed new binary would leave a machine that cannot run jobs).
 
 5. **Channels are stable and beta, expressed in SemVer.** Prerelease versions (`0.2.0-beta.1`) are
    published to `beta`; stable runners see stable releases only, beta runners see the newest of
@@ -73,6 +76,8 @@ Fastify service that may have limited or no egress to GitHub.
   remedy is a new version or a yank, not an edit.
 - Runners need a token and network access to the centre for updates; fully offline hosts update by
   copying an archive and swapping the binary as described in the updates document.
-- The `autoUpdate` toggle is currently informational on the runner side (the daemon applies any
-  offered release); the host-level `[update] enabled` switch is what disables automatic updates.
-  This is recorded as a known limitation in the updates document.
+- `autoUpdate` is enforced at two layers: the centre withholds the offer (a pin included), and the
+  runner checks the flag again before downloading or applying, so an opted-out runner is not
+  updated by an old or misconfigured centre. `[update] enabled = false` remains the host-level
+  switch that stops automatic checks. The `autoUpdate` gate is described in
+  `docs/operations/updates.md` and proven by the centre, runner and CLI tests listed there.

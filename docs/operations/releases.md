@@ -34,37 +34,22 @@ Five archives, one per target: `intentra-runner-<version>-<target>.tar.gz` (Linu
   `update-manifest.json` is never reformatted after signing, because the signature is checked
   against those bytes.
 
-## One-time setup (human)
+## Signing key (generated once)
 
-A release cannot be cut until the signing key exists and the matching public key is committed. A
-release build with the all-zero placeholder key fails closed: `manifest.mjs` refuses to write the
-manifest and the workflow fails before creating a Release.
+The release key pair is generated and the public half is committed: the Ed25519 public key is
+`crates/runner-core/keys/release.pub`, raw base64, 32 bytes (44 characters), not the all-zero
+placeholder. The runner embeds this file and the API reads the same file at startup
+(`apps/api/src/server.ts`), so one committed key serves the whole system. The seed lives outside
+the repository in a gitignored file with mode `0600`; it is never committed, pasted into a
+document or a report, printed, or written to a fixture.
 
-Generate the key pair once, offline:
+The one action that makes the committed key usable for releases is storing the seed as the
+repository secret `RELEASE_SIGNING_KEY`; `manifest.mjs` reads it only from the environment. Then:
 
-```bash
-node --input-type=module -e '
-import { generateKeyPairSync } from "node:crypto";
-const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-const seed = privateKey.export({ format: "der", type: "pkcs8" }).subarray(-32);
-const pub = publicKey.export({ format: "der", type: "spki" }).subarray(-32);
-console.log("RELEASE_SIGNING_KEY=" + seed.toString("base64"));
-console.log(pub.toString("base64"));
-'
-```
-
-The command prints a 32-byte seed and a 32-byte public key, both base64 (verified: both export
-`32` bytes). Then:
-
-1. Store the seed line's value as the repository secret `RELEASE_SIGNING_KEY`. It is never
-   committed; `manifest.mjs` reads it only from the environment.
-2. Commit the public key value, raw base64 with no comment, as
-   `crates/runner-core/keys/release.pub`. The runner embeds this file and the API reads the same
-   file at startup (`apps/api/src/server.ts`), so one committed key serves the whole system.
-3. Set the repository variable `CENTER_URL` (the control plane's public origin, e.g.
+1. Set the repository variable `CENTER_URL` (the control plane's public origin, e.g.
    `https://intentra.example`) and the repository secret `CENTER_RELEASE_TOKEN`. The token must be
    the same string as the centre's `RELEASE_PUBLISH_TOKEN` (at least 16 characters).
-4. Configure the centre (`infra/compose/.env`, then restart `api`):
+2. Configure the centre (`infra/compose/.env`, then restart `api`):
 
    | Centre variable | Effect |
    | --- | --- |
@@ -72,6 +57,10 @@ The command prints a 32-byte seed and a 32-byte public key, both base64 (verifie
    | `RELEASE_CACHE_DIR` | Where streamed archives are cached (default `/data/releases`). |
    | `RELEASE_MAX_ARTIFACT_BYTES` | Publish/stream size limit (default `268435456`, 256 MiB). |
    | `GITHUB_RELEASE_TOKEN` | Token used to download assets from a private GitHub repository; only needed while the repository is private. |
+
+A release build with the all-zero placeholder public key fails closed: `manifest.mjs` refuses to
+write the manifest and the workflow fails before creating a Release. That is the diagnostic for a
+reverted key, not the normal state.
 
 Changing the key after a release is not a routine operation: runners verify every future manifest
 with the key they were built with, so a new key requires shipping a release signed with the old
@@ -100,7 +89,8 @@ bash scripts/release/package.sh
 `pnpm -w test:release` builds `@intentra/contracts` and runs `scripts/release/release.test.mjs`:
 it checks the channel derivation, that a tag which disagrees with `Cargo.toml` is rejected, that
 `manifest.mjs` writes a manifest the shared schema accepts and signs it, that a signature the
-chosen public key cannot verify is refused, that a `--version` different from `Cargo.toml` is
+chosen public key cannot verify is refused, that the committed `release.pub` is a real 32-byte key
+and the all-zero placeholder is refused, that a `--version` different from `Cargo.toml` is
 refused, and that `release.yml` still builds every target on its runner. Observed:
 
 ```text
@@ -108,9 +98,11 @@ refused, and that `release.yml` still builds every target on its runner. Observe
 ✔ package.sh rejects a tag that does not match the workspace version
 ✔ manifest.mjs writes a manifest the shared schema accepts and signs it
 ✔ manifest.mjs refuses a signature the runner public key cannot verify
+✔ committed release.pub is a real 32-byte key
+✔ manifest.mjs refuses a placeholder release public key
 ✔ manifest.mjs refuses a version that differs from Cargo.toml
 ✔ release.yml parses and builds every target on its runner
-ℹ tests 6; pass 6; fail 0
+ℹ tests 8; pass 8; fail 0
 ```
 
 `bash scripts/release/package.sh` builds the release binary for the host target (or the target you
@@ -289,18 +281,11 @@ a running centre; the e2e run exercised the yank path and observed `HTTP 204`.
 
 The first release is `v0.2.0`; use it as the rehearsal for everything below.
 
-1. Generate the key pair, set `RELEASE_SIGNING_KEY`, commit `crates/runner-core/keys/release.pub`,
-   set `CENTER_URL` and `CENTER_RELEASE_TOKEN`, and configure the centre's
-   `RELEASE_PUBLISH_TOKEN`, `RELEASE_CACHE_DIR` and (if the repository is private)
-   `GITHUB_RELEASE_TOKEN`.
-2. Confirm the placeholder is gone. With the committed placeholders, `manifest.mjs` refuses to
-   write the manifest even with a valid signing key:
-
-   ```text
-   release: .../crates/runner-core/keys/release.pub is still the all-zero placeholder; embed the release public key first
-   ```
-
-   After committing the real key, prove that the CI secret matches it before tagging (needs the
+1. Store the seed as the repository secret `RELEASE_SIGNING_KEY` (the pair is already generated
+   and `crates/runner-core/keys/release.pub` is committed), set `CENTER_URL` and
+   `CENTER_RELEASE_TOKEN`, and configure the centre's `RELEASE_PUBLISH_TOKEN`, `RELEASE_CACHE_DIR`
+   and (if the repository is private) `GITHUB_RELEASE_TOKEN`.
+2. Prove that the CI secret matches the committed public key before tagging (needs the
    `RELEASE_SIGNING_KEY` value and no other input):
 
    ```bash
@@ -322,9 +307,14 @@ The first release is `v0.2.0`; use it as the rehearsal for everything below.
    '
    ```
 
-   Observed with a matching throwaway pair: `key pair: ok`; with the wrong public key the command
-   exits 1 and prints `key pair: MISMATCH`. With the committed placeholder the same command also
-   exits 1, because the zero key cannot verify the signature.
+   Observed with the committed pair: `key pair: ok`; with a different seed the command exits 1 and
+   prints `key pair: MISMATCH (RELEASE_SIGNING_KEY does not match release.pub)`. If the committed
+   key has been reverted to the all-zero placeholder, `manifest.mjs` refuses to write the manifest
+   even with a valid seed:
+
+   ```text
+   release: .../crates/runner-core/keys/release.pub is still the all-zero placeholder; embed the release public key first
+   ```
 3. Run `pnpm -w test:release` and `bash scripts/release/package.sh` locally (both are in this
    document with their observed output).
 4. Merge the version bump and `CHANGELOG.md` entry, then tag and push as in "Cut the release".
@@ -342,8 +332,8 @@ The first release is `v0.2.0`; use it as the rehearsal for everything below.
 | `tag vX.Y.Z does not match the workspace version` | `Cargo.toml` and the tag disagree; bump, merge, re-tag. |
 | Workflow gate: tag not on `main` | Tag the merge commit of `main`. |
 | `RELEASE_SIGNING_KEY is not set` / `must be a base64-encoded 32-byte Ed25519 seed` | Repository secret missing or wrong. |
-| `is still the all-zero placeholder` | Commit the real public key. |
-| `the manifest signature does not verify against ...release.pub` | The secret and the committed key are from different key pairs. |
+| `is still the all-zero placeholder` | The committed `crates/runner-core/keys/release.pub` was reverted to the placeholder; restore the real key. |
+| `the manifest signature does not verify against ...release.pub` | `RELEASE_SIGNING_KEY` and the committed key are from different key pairs; set the secret from the seed that matches `release.pub`. |
 | `missing asset ...; run scripts/release/package.sh <target>` | A build matrix job failed; rerun it before publishing. |
 | Centre `503 RELEASE_DISABLED` | `RELEASE_PUBLISH_TOKEN` is unset on the centre, or the centre has no release key configured (its `release.pub` is still the all-zero placeholder). |
 | Centre `401 AUTH_REQUIRED` | `CENTER_RELEASE_TOKEN` and `RELEASE_PUBLISH_TOKEN` differ. |

@@ -41,10 +41,15 @@ The centre builds it from stored releases and the runner's policy row (`runners.
 - a `pinnedVersion` overrides the channel and is offered even when it is older (that is the
   intended way to roll a runner back); a pin that is missing from the visible pool or yanked yields
   `available: false` with reason `pinned version is unavailable`;
-- `autoUpdate: false` currently yields `available: true` with reason `auto-update is disabled` so
-  the UI can show it. **Known limitation:** the runner daemon does not consult this flag and
-  applies any offered release; to stop automatic application on a host set `[update] enabled =
-  false`. Upgrade condition: the daemon gates its cycle on `autoUpdate`.
+- `autoUpdate: false` is a server-side gate: the answer is `available: false` with reason
+  `auto-update is disabled` and carries neither `manifest` nor `signature`. It applies to a
+  channel candidate and to a pinned version alike — a pin selects a version, it does not override
+  the switch.
+
+The flag is enforced twice. The centre withholds the offer (first layer); the daemon and
+`intentra-runner update --apply` check `autoUpdate` in the response again before downloading or
+installing anything (second layer), so an old or misconfigured centre cannot push an update to a
+runner that opted out.
 
 A protocol bump makes old runners see nothing until they are updated by hand, which is deliberate:
 the centre never offers a release the runner cannot speak.
@@ -91,6 +96,11 @@ accepted-but-not-started job, or a job reservation all block the update, and whi
 the gate the centre's offers are declined, so a restart never interrupts work. A failed check does
 not block the next cycle.
 
+The daemon also refuses an `available: true` answer whose `autoUpdate` is false: it logs
+`not applying an available update` with its own `AUTO_UPDATE_DISABLED_REASON`
+(`auto-updates are disabled for this runner (autoUpdate=false); enable auto-update in the centre
+before applying`), downloads no artifact, sends no report and keeps the current binary.
+
 ## Applying, restarting and rollback
 
 Before replacing anything the runner copies the running executable to `<exe>.prev` and writes
@@ -124,7 +134,13 @@ are best effort: an unreachable centre does not block the runner.
 
 `intentra-runner update --apply` applies immediately in the current process and does not restart;
 run `intentra-runner start` afterwards to load the new binary, and the next start confirms the
-update. It refuses with exit code 1 while the daemon is running, so stop the daemon first.
+update. It refuses with exit code 1 while the daemon is running, so stop the daemon first. It also
+applies nothing while `autoUpdate` is false: when the centre answered `available: false` it prints
+a JSON object with `current` and `available: false` and exits 0; when a centre still offers a
+release with `autoUpdate: false` it exits 1 with
+`update: auto-updates are disabled for this runner (autoUpdate=false); enable auto-update in the
+centre before applying` and downloads nothing. `update` without `--apply` always prints the JSON,
+where the same gate shows as `available: false` with reason `auto-update is disabled`.
 
 ## Channels, pinning and admin controls
 
@@ -132,13 +148,18 @@ update. It refuses with exit code 1 while the daemon is running, so stop the dae
   `beta`; stable runners never see it. There are no other channels.
 - **Pin** in the Runners screen (admin or project owner): `PUT /api/runners/:id/update-policy`
   with `{pinnedVersion: "0.2.0", autoUpdate: true}`. Clearing the pin is `pinnedVersion: null`.
-  The route is audited and the Runners screen refreshes over SSE `runner.updated`.
+  The route is audited and the Runners screen refreshes over SSE `runner.updated`. A pin does not
+  override `autoUpdate`: with the flag off the pinned version is not offered and `--apply`
+  applies nothing (see above).
 - **Yank** a bad release at the centre (see
   [`docs/operations/releases.md`](releases.md#publish-to-the-centre)); it stops being offered and
   its artifact answers `404`, so a runner that has not downloaded it yet fails the check instead of
   installing it. A runner that already staged it still rolls back if the new binary is broken.
-- **`autoUpdate`** is stored and returned but, as noted above, the current daemon applies any
-  offered release. Use `[update] enabled = false` to stop automatic application on a host.
+- **`autoUpdate`** is the per-runner switch for automatic updates, on by default. With `false` the
+  centre returns `available: false` without a manifest or signature, for a channel candidate and
+  a pin alike, and the daemon and `update --apply` refuse an offered release. `[update] enabled =
+  false` is the host-level switch that stops automatic checking, but a pending update is still
+  reconciled on start (see "Configuration").
 
 ## Manual and offline operation
 
@@ -150,7 +171,9 @@ intentra-runner update --config ~/.intentra/config.toml
 
 It prints one JSON object: `current`, `latest`, `channel`, `available`, `pinnedVersion`,
 `autoUpdate`, `reason`. Exit code 0 means the check completed (with or without an update), 4 means
-no token, 3 means the config could not be loaded, 1 means the centre or the update failed. `update
+no token, 3 means the config could not be loaded, 1 means the centre or the update failed. With
+`autoUpdate: false` the JSON shows `available: false` and reason `auto-update is disabled`; the
+`--apply` behaviour for that case is described under "Applying, restarting and rollback". `update
 --apply` installs the offered release in the same way as the daemon, prints the applied version,
 and exits 1 with the reason when the release is refused or the install fails.
 
@@ -174,8 +197,8 @@ access.
 ## Observability and troubleshooting
 
 The runner logs update events with `tracing` (no secrets, no tokens): `deferring the update check
-while a job is active`, `installed an update`, `the update failed`, `the update rolled back`,
-`automatic update checks are off`. The centre records every report and shows it in the Runners
+while a job is active`, `not applying an available update`, `installed an update`, `the update
+failed`, `the update rolled back`, `automatic update checks are off`. The centre records every report and shows it in the Runners
 screen; `GET /api/runners` exposes `pinnedVersion`, `autoUpdate`, `latestVersion`,
 `updateAvailable` and `lastUpdate`.
 
@@ -198,10 +221,10 @@ screen; `GET /api/runners` exposes `pinnedVersion`, `autoUpdate`, `latestVersion
 | Area | Proof |
 | --- | --- |
 | manifest/signature contract | `packages/contracts/test/release.test.ts`, `crates/runner-core/src/update/{manifest,signature}.rs` unit tests, `fixtures/release/manifest.json` |
-| policy (channel, pin, yanked, protocol, no downgrade) | `apps/api/test/releases-policy.test.ts` |
+| policy (channel, pin, yanked, protocol, no downgrade, `autoUpdate` gate) | `apps/api/test/releases-policy.test.ts` — `does not offer a release when auto-update is disabled`, `does not offer the pinned version when auto-update is disabled` |
 | artifact stream (hash, cache, 404, 502) | `apps/api/test/release-artifacts.test.ts` |
 | report and SSE | `apps/api/test/release-report-policy.test.ts` |
-| apply, defer and rollback | `crates/runner-core/src/update/{apply,daemon}.rs` unit tests |
+| apply, defer and rollback, second `autoUpdate` layer | `crates/runner-core/src/update/{apply,daemon}.rs` unit tests — `defers_a_release_when_auto_update_is_disabled`; `crates/runner/tests/cli.rs` — `update_apply_refuses_when_auto_update_is_disabled` |
 | CLI status and `--apply` | `crates/runner/tests/cli.rs` |
-| real centre, `0.1.0` → `0.2.0`, forged signature, deferral, rollback | `scripts/release/e2e-update.sh`; evidence in `.agile/e2e-evidence.md` of the task worktree (gitignored) |
+| real centre, `0.1.0` → `0.2.0`, forged signature, deferral, rollback, `autoUpdate` gate | `scripts/release/e2e-update.sh` and its driver `scripts/release/e2e-update.ts`, five scenarios: `happy`, `bad-signature`, `defer`, `rollback`, `auto-update-off` (default `E2E_SCENARIOS`). `auto-update-off` proves the centre withholds 0.2.0 from a runner with `autoUpdate: false` (no manifest/signature, no artifact download, no applied report), then enables the flag and applies 0.2.0 |
 | release pipeline | `pnpm -w test:release` |
