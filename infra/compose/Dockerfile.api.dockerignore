@@ -14,5 +14,7 @@ test-results
 **/*.log
 .env
 .env.*
+**/.env
+**/.env.*
 .github
 docs

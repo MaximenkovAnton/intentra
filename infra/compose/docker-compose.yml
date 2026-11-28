@@ -31,6 +31,8 @@ services:
     build:
       context: ../..
       dockerfile: infra/compose/Dockerfile.api
+      args:
+        GIT_REVISION: "${INTENTRA_GIT_REVISION:-unknown}"
     image: intentra-api:${INTENTRA_IMAGE_TAG:-local}
     environment:
       # development is the dev slice (plain-HTTP origin); production requires
@@ -77,23 +79,23 @@ services:
           fetch('http://127.0.0.1:8080/healthz')
           .then((res) => process.exit(res.ok ? 0 : 1))
           .catch(() => process.exit(1));
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 6
       start_period: 30s
 
   web:
     build:
       context: ../..
       dockerfile: infra/compose/Dockerfile.web
+      args:
+        GIT_REVISION: "${INTENTRA_GIT_REVISION:-unknown}"
     image: intentra-web:${INTENTRA_IMAGE_TAG:-local}
     depends_on:
       api:
         condition: service_healthy
-    ports:
-      # Single origin: the host reaches the SPA and /api through this port only.
-      - "${WEB_PORT:-8090}:8080"
     restart: unless-stopped
+    stop_grace_period: 2s
     init: true
     security_opt:
       - no-new-privileges:true
@@ -101,7 +103,34 @@ services:
       - ALL
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
-      interval: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  ingress:
+    build:
+      context: ../..
+      dockerfile: infra/compose/Dockerfile.ingress
+      args:
+        GIT_REVISION: "${INTENTRA_GIT_REVISION:-unknown}"
+    image: intentra-ingress:${INTENTRA_IMAGE_TAG:-local}
+    ports:
+      # The single published origin: NPM reaches the SPA and /api here.
+      - "${WEB_PORT:-8090}:8080"
+    depends_on:
+      web:
+        condition: service_started
+    restart: unless-stopped
+    stop_grace_period: 2s
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s

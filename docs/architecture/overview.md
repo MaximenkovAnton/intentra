@@ -18,6 +18,7 @@ adapters) are in the tree. Deployment and operating steps are in `docs/runbook.m
 | Component | Location | Stack | Responsibility |
 | --- | --- | --- | --- |
 | web | `apps/web` | React 19, Vite 7, TanStack Router/Query, react-i18next (ru/en), CSS tokens | Product front office: identity, projects/members, runners, intents; talks to the API over HTTP/SSE on one origin. |
+| ingress | `infra/compose/ingress.conf` | nginx 1.29, Docker DNS resolver | The only published port (`${WEB_PORT:-8090}`); proxies to the web upstream and re-resolves it so a rolled web container is picked up without a restart. |
 | api | `apps/api` | Fastify 5, Node 24, TypeScript strict, Zod, Drizzle + `pg`, pino, `openid-client`, SSE | OIDC login/session, RBAC, projects/members/runners; the resting place for orchestration (stages, jobs, leases, retries, budgets), memory context API and the WSS runner hub. |
 | contracts | `packages/contracts` | Zod, OpenAPI 3.1 via `@asteasolutions/zod-to-openapi`, WS protocol and adapter types | Single source of REST/WS shapes; emits the OpenAPI document consumed by web via `openapi-typescript`. |
 | Postgres 18 | external instance | — | Users, sessions, projects, members, runners, and the planned intent/spec/job/finding tables. |
@@ -43,8 +44,11 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 
 ## Data flow
 
-1. The browser loads the SPA from web (nginx). `/api` and `/api/events` are proxied to api, so
-   web and api share one origin.
+1. The browser loads the SPA through the deployment proxy (NPM, TLS), which forwards to
+   `ingress`; ingress proxies to web, and web proxies `/api` and `/api/events` to api, so web and
+   api share one origin. Both proxies re-resolve their upstream through Docker DNS, and the
+   rolling deploy pins the replacement container in the consuming proxy before it removes the
+   old one, so traffic never has a removed address as its only peer.
 2. Login: web redirects to `/api/auth/login`; api performs OIDC authorization code + PKCE with
    Pocket ID and returns to `/api/auth/callback`; api stores a server-side session and sets an
    httpOnly, Secure, SameSite=Lax cookie. Intentra has no passwords, registration or reset.
@@ -62,8 +66,13 @@ ID (OIDC identity) and FalkorDB + Qdrant + Ollama with bge-m3 (memory).
 
 ## Deployment shape
 
-`infra/compose/docker-compose.yml` runs three services: `migrate` (one-shot Drizzle migrations),
-`api` (Node 24, non-root) and `web` (nginx, non-root, static SPA + `/api` proxy). Postgres,
+`infra/compose/docker-compose.yml` runs four services: `migrate` (one-shot Drizzle migrations),
+`api` (Node 24, non-root), `web` (nginx, non-root, static SPA + `/api` proxy) and `ingress`
+(nginx, the only published port, `${WEB_PORT:-8090}`). `api` and `web` have no published ports,
+so the rolling deploy can replace them one container at a time; the ingress and web configs
+resolve their upstream dynamically, and `scripts/deploy.sh` runs migrations, rolls api then web
+with a deterministic drain, recreates ingress and verifies the endpoints and the revision
+labels. Postgres,
 Pocket ID (`infra/idp`) and FalkorDB/Qdrant/Ollama (`infra/memory`) run on their own hosts; the
 API reaches them over the network. Host provisioning and addressing are environment-specific and
 stay in the operator's private infrastructure repository. CI (`.github/workflows/ci.yml`) runs
