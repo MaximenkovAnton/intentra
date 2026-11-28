@@ -156,7 +156,7 @@ by a human before re-tagging.
 | --- | --- | --- |
 | `x86_64-unknown-linux-gnu` | ubuntu-latest | `cargo zigbuild`, Zig 0.14.0, `cargo-zigbuild` |
 | `aarch64-unknown-linux-gnu` | ubuntu-latest | `cargo zigbuild`, Zig 0.14.0, `cargo-zigbuild` |
-| `x86_64-apple-darwin` | macos-13 | `cargo build` |
+| `x86_64-apple-darwin` | macos-15-intel | `cargo build` |
 | `aarch64-apple-darwin` | macos-14 | `cargo build` |
 | `x86_64-pc-windows-msvc` | windows-latest | `cargo build` |
 
