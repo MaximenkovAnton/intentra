@@ -9712,6 +9712,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9746,6 +9748,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },
@@ -9780,6 +9784,8 @@
                         "LIMIT",
                         "RUNNER_OFFLINE",
                         "ESCALATION_EXPIRED",
+                        "UPSTREAM_FAILED",
+                        "RELEASE_DISABLED",
                         "INTERNAL"
                       ]
                     },

@@ -41,6 +41,7 @@ const signaturePath = required('E2E_SIGNATURE');
 const scenarios = required('E2E_SCENARIOS').split(',').map((name) => name.trim());
 const deferTimeoutMs = Number(process.env.E2E_DEFER_TIMEOUT_SECS ?? '420') * 1000;
 const publishToken = 'e2e-release-publish-token-0123456789';
+const HELLO_PENDING_VERSION = '0.0.0-e2e-hello-pending';
 
 const tokenPath = join(work, 'token');
 const configPath = join(work, 'config.toml');
@@ -84,18 +85,27 @@ const hostArchiveName = (version: string): string =>
 
 class LocalArtifactSource implements ArtifactSource {
   readonly calls: string[] = [];
-  readonly singleUse = new Set<string>();
+  readonly beforeServe = new Map<string, () => Promise<void>>();
   private readonly served = new Set<string>();
 
   constructor(private readonly directory: string) {}
+
+  reset(): void {
+    this.calls.length = 0;
+    this.beforeServe.clear();
+    this.served.clear();
+  }
 
   async open(url: string, _signal: AbortSignal): Promise<Readable> {
     const fileName = basename(new URL(url).pathname);
     this.calls.push(fileName);
     const path = join(this.directory, fileName);
     if (!existsSync(path)) throw new Error(`offline artifact source has no ${fileName}`);
-    if (this.singleUse.has(fileName) && this.served.has(fileName)) {
-      throw new Error(`offline artifact source serves ${fileName} once`);
+    if (this.served.has(fileName)) throw new Error(`offline artifact source serves ${fileName} once`);
+    const hook = this.beforeServe.get(fileName);
+    if (hook !== undefined) {
+      this.beforeServe.delete(fileName);
+      await hook();
     }
     this.served.add(fileName);
     return createReadStream(path);
@@ -156,6 +166,18 @@ async function post(path: string, body: unknown, token?: string): Promise<{ stat
 
 const publish = (manifest: string, signature: string): Promise<{ status: number; body: unknown }> =>
   post('/api/admin/releases', { manifest, signature }, publishToken);
+
+async function getUpdate(): Promise<{ status: number; body: unknown }> {
+  if (runner === null) throw new Error('the runner is not seeded');
+  const response = await fetch(`${center()}/api/runners/update?current=0.1.0&channel=stable`, {
+    headers: { authorization: `Bearer ${runner.token}` },
+  });
+  const body: unknown = await response.json().catch(() => null);
+  return { status: response.status, body };
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 
 const yank = (version: string): Promise<{ status: number; body: unknown }> =>
   post(`/api/admin/releases/${version}/yank`, { yanked: true }, publishToken);
@@ -325,8 +347,33 @@ async function ensureCorruptRelease(): Promise<void> {
   check(result.status === 201, `the release API stores the 0.3.0 release with a valid signature (HTTP ${result.status})`);
 }
 
+async function beginScenario(startVersion: string, autoUpdate = true): Promise<void> {
+  await stopRunner();
+  if (runner === null) throw new Error('the runner is not seeded');
+  await pool().query('DELETE FROM runner_update_events');
+  await pool().query('DELETE FROM releases');
+  await pool().query('UPDATE runners SET version = $1, auto_update = $2, pinned_version = NULL WHERE id = $3', [
+    HELLO_PENDING_VERSION,
+    autoUpdate,
+    runner.runner.id,
+  ]);
+  source.reset();
+  for (const path of [
+    exePath,
+    `${exePath}.next`,
+    previousPath,
+    join(work, 'update-state.json'),
+    join(work, 'state.json'),
+    join(work, 'release-cache'),
+  ]) {
+    await rm(path, { recursive: true, force: true });
+  }
+  note(`- scenario clears the channel and the runner row (hello pending, expects ${startVersion} on connect, autoUpdate=${autoUpdate}, no local update state)`);
+}
+
 async function scenarioHappyPath(): Promise<void> {
   note('## Scenario: happy path 0.1.0 -> 0.2.0 (no jobs)');
+  await beginScenario('0.1.0');
   await publishGeneratedRelease();
   const newSha = sha256File(newBinary);
   const oldSha = sha256File(oldBinary);
@@ -354,6 +401,7 @@ async function scenarioHappyPath(): Promise<void> {
 
 async function scenarioBadSignature(): Promise<void> {
   note('## Scenario: the centre and the runner refuse a forged signature');
+  await beginScenario('0.1.0');
   const signed = signedManifest('0.2.1', corruptArchive);
   const forged = tamperSignature(signed.signature);
   const rejected = await publish(signed.manifest, forged);
@@ -365,7 +413,7 @@ async function scenarioBadSignature(): Promise<void> {
     ['0.2.1', 'stable', PROTOCOL_VERSION, signed.manifest, forged, 'e2e forged signature', new Date()],
   );
   note('- inserted a 0.2.1 release with a forged signature directly into the channel');
-  await startRunner(newBinary, '0.2.0');
+  await startRunner(oldBinary, '0.1.0');
   const failed = await waitFor(
     'the runner reports the rejected signature',
     async () => (await updateEvents()).find((event) => event.status === 'failed' && event.toVersion === '0.2.1'),
@@ -373,8 +421,8 @@ async function scenarioBadSignature(): Promise<void> {
     100,
   );
   check(failed.reason?.includes('signature') === true, `the failure names the signature (reason: ${failed.reason ?? 'none'})`);
-  check((await runnerVersion()) === '0.2.0', 'the runner still reports 0.2.0 after the forged manifest');
-  check(sha256File(exePath) === sha256File(newBinary), 'the forged manifest did not replace the binary');
+  check((await runnerVersion()) === '0.1.0', 'the runner still reports 0.1.0 after the forged manifest');
+  check(sha256File(exePath) === sha256File(oldBinary), 'the forged manifest did not replace the binary');
   check(
     source.calls.every((call) => call !== hostArchiveName('0.2.1')),
     'the runner refused the signature before downloading the artifact',
@@ -384,6 +432,7 @@ async function scenarioBadSignature(): Promise<void> {
 
 async function scenarioDeferWhileBusy(): Promise<void> {
   note('## Scenario: the update is deferred while a job is active');
+  await beginScenario('0.1.0');
   if (runner === null) throw new Error('the runner is not seeded');
   await startRunner(newBinary, '0.2.0');
   const jobId = randomUUID();
@@ -425,9 +474,13 @@ async function scenarioDeferWhileBusy(): Promise<void> {
 
 async function scenarioRollback(): Promise<void> {
   note('## Scenario: a broken binary is rolled back to .prev');
+  await beginScenario('0.2.0');
   await ensureCorruptRelease();
   const newSha = sha256File(newBinary);
-  source.singleUse.add(hostArchiveName('0.3.0'));
+  let yankStatus = 0;
+  source.beforeServe.set(hostArchiveName('0.3.0'), async () => {
+    yankStatus = (await yank('0.3.0')).status;
+  });
   await startRunner(newBinary, '0.2.0', false);
   const rolledBack = await waitFor(
     'the runner reports rolled_back for the broken 0.3.0',
@@ -435,9 +488,17 @@ async function scenarioRollback(): Promise<void> {
     45000,
     50,
   );
+  check(
+    yankStatus === 204,
+    `the centre yanked the broken release while the runner was downloading it (HTTP ${yankStatus})`,
+  );
+  await waitFor(
+    'the recovered runner checks the yanked channel and finds no update',
+    () => runnerLog().includes('the runner is up to date'),
+    60000,
+    100,
+  );
   await stopRunner('SIGKILL', 3000);
-  const yanked = await yank('0.3.0');
-  check(yanked.status === 204, `the centre yanks the broken release (HTTP ${yanked.status})`);
   check(sha256File(exePath) === newSha, 'the runner binary on disk is the previous 0.2.0 binary');
   check(existsSync(previousPath) && sha256File(previousPath) === newSha, '.prev holds the 0.2.0 binary the rollback restored');
   check(
@@ -454,6 +515,64 @@ async function scenarioRollback(): Promise<void> {
     'the runner did download the broken 0.3.0 artifact before the rollback',
   );
   note(`- artifacts downloaded: ${source.calls.join(', ')}`);
+}
+
+async function scenarioAutoUpdateOff(): Promise<void> {
+  note('## Scenario: autoUpdate=false withholds the release, enabling it applies the same release');
+  await beginScenario('0.1.0', false);
+  await publishGeneratedRelease();
+  await startRunner(oldBinary, '0.1.0');
+  await waitFor('the disabled runner finishes its update check', () => runnerLog().includes('the runner is up to date'), 60000, 100);
+  const denied = await getUpdate();
+  const deniedBody = asRecord(denied.body);
+  check(denied.status === 200, `the update endpoint answers HTTP 200 for the disabled runner (got ${denied.status})`);
+  check(deniedBody.available === false, 'the centre offers no update to a runner with autoUpdate=false');
+  check(deniedBody.autoUpdate === false, 'the centre reports autoUpdate=false for the runner');
+  check(deniedBody.latestVersion === '0.2.0', `the centre still names the published latest version 0.2.0 (got ${String(deniedBody.latestVersion)})`);
+  check(deniedBody.reason === 'auto-update is disabled', `the refusal names the disabled policy (reason: ${String(deniedBody.reason)})`);
+  check(
+    !('manifest' in deniedBody) && !('signature' in deniedBody),
+    'the refusal carries no manifest and no signature',
+  );
+  check((await runnerVersion()) === '0.1.0', 'the runner stays on 0.1.0 while auto-update is disabled');
+  const disabledVersion = spawnSync(exePath, ['--version'], { encoding: 'utf8' });
+  check(
+    disabledVersion.status === 0 && disabledVersion.stdout.includes('0.1.0'),
+    `the binary on disk still reports --version 0.1.0 (${disabledVersion.stdout.trim()})`,
+  );
+  check(
+    source.calls.every((call) => call !== hostArchiveName('0.2.0')),
+    'the disabled runner downloaded no 0.2.0 artifact',
+  );
+  check(
+    (await updateEvents()).every((event) => event.status !== 'applied' && event.toVersion !== '0.2.0'),
+    'the disabled runner reported no applied update',
+  );
+  await stopRunner();
+
+  if (runner === null) throw new Error('the runner is not seeded');
+  await pool().query('UPDATE runners SET auto_update = true, version = $1 WHERE id = $2', [
+    HELLO_PENDING_VERSION,
+    runner.runner.id,
+  ]);
+  note('- enabled autoUpdate for the runner in the centre and restarted it');
+  const offered = await getUpdate();
+  const offeredBody = asRecord(offered.body);
+  check(
+    offered.status === 200 && offeredBody.available === true && typeof offeredBody.manifest === 'string',
+    `the centre offers 0.2.0 with a manifest once autoUpdate is enabled (HTTP ${offered.status}, available ${String(offeredBody.available)})`,
+  );
+  await startRunner(oldBinary, '0.1.0');
+  await waitFor('the centre records the hello of the updated runner', async () => (await runnerVersion()) === '0.2.0', 60000, 100);
+  const applied = await waitFor(
+    'the re-enabled runner reports the applied update',
+    async () => (await updateEvents()).find((event) => event.status === 'applied' && event.toVersion === '0.2.0'),
+    30000,
+    100,
+  );
+  check(applied.fromVersion === '0.1.0', `the positive control goes 0.1.0 -> 0.2.0 (got ${applied.fromVersion} -> ${applied.toVersion})`);
+  check(sha256File(exePath) === sha256File(newBinary), 'the binary on disk is the 0.2.0 artifact after enabling auto-update');
+  await stopRunner();
 }
 
 async function migrate(): Promise<void> {
@@ -505,6 +624,7 @@ async function main(): Promise<void> {
     'bad-signature': scenarioBadSignature,
     defer: scenarioDeferWhileBusy,
     rollback: scenarioRollback,
+    'auto-update-off': scenarioAutoUpdateOff,
   };
   for (const name of scenarios) {
     const scenario = suite[name];

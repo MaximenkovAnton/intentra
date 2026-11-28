@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # End-to-end proof of the runner self-update against a real centre:
 # 0.1.0 -> 0.2.0 auto-update, signature refusal, deferral while a job is active,
-# rollback of a broken binary. The centre runs the real Fastify app on the real
+# rollback of a broken binary, and the autoUpdate=false policy gate. The centre runs the real Fastify app on the real
 # database; only the release key (test fixture) and the artifact source (a local
 # directory instead of GitHub) are injected, because the test host is offline.
 #
 # Required: TEST_DATABASE_URL pointing at a database owned by this script.
 # Optional: E2E_RUNNER_OLD_BIN (0.1.0), E2E_RUNNER_NEW_BIN (0.2.0),
-#           E2E_SCENARIOS (comma list: happy,bad-signature,defer,rollback),
+#           E2E_SCENARIOS (comma list: happy,bad-signature,defer,rollback,auto-update-off),
 #           E2E_WORK (kept when set), E2E_EVIDENCE (default .agile/e2e-evidence.md),
 #           E2E_DEFER_TIMEOUT_SECS (default 420).
 set -euo pipefail
@@ -17,7 +17,7 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 export PATH="$HOME/.cargo/bin:$PATH"
 
 : "${TEST_DATABASE_URL:?TEST_DATABASE_URL must name a disposable PostgreSQL database}"
-E2E_SCENARIOS="${E2E_SCENARIOS:-happy,bad-signature,defer,rollback}"
+E2E_SCENARIOS="${E2E_SCENARIOS:-happy,bad-signature,defer,rollback,auto-update-off}"
 DEFER_TIMEOUT="${E2E_DEFER_TIMEOUT_SECS:-420}"
 EVIDENCE="${E2E_EVIDENCE:-$ROOT/.agile/e2e-evidence.md}"
 
@@ -62,7 +62,8 @@ build_old() {
     --exclude=./.git --exclude=./node_modules --exclude=./target --exclude=./.agile \
     --exclude='./apps/*/node_modules' --exclude='./apps/*/dist' --exclude='./packages/*/dist' \
     --exclude='./apps/*/coverage' -cf - . | tar -x -C "$build"
-  sed -i 's/^version = "0.2.0"$/version = "0.1.0"/' "$build/Cargo.toml"
+  sed 's/^version = "0.2.0"$/version = "0.1.0"/' "$build/Cargo.toml" > "$build/Cargo.toml.tmp"
+  mv "$build/Cargo.toml.tmp" "$build/Cargo.toml"
   ( cd "$build" && CARGO_TARGET_DIR="$ROOT/target" cargo build -p intentra-runner )
   cp "$ROOT/target/debug/intentra-runner" "$BIN_DIR/runner-0.1.0"
   chmod 755 "$BIN_DIR/runner-0.1.0"
@@ -146,7 +147,7 @@ tar -C "$CORRUPT_DIR" -czf "$ART_DIR/intentra-runner-0.3.0-$TARGET.tar.gz" inten
   echo "new runner: $NEW_VERSION ($NEW_BIN)"
   echo "scenarios: $E2E_SCENARIOS"
   echo
-  echo '$ tar -C . --exclude=./target -cf - . | tar -x -C "$build" && sed -i "s/^version = \"0.2.0\"/version = \"0.1.0\"/" "$build/Cargo.toml" && cargo build -p intentra-runner'
+  echo '$ tar -C . --exclude=./target -cf - . | tar -x -C "$build" && sed "s/^version = \"0.2.0\"/version = \"0.1.0\"/" "$build/Cargo.toml" > "$build/Cargo.toml.tmp" && mv "$build/Cargo.toml.tmp" "$build/Cargo.toml" && cargo build -p intentra-runner'
   echo '$ cargo build -p intentra-runner'
   echo '$ node scripts/release/manifest.mjs --version 0.2.0 --assets artifacts --out artifacts --public-key fixtures/release/test.pub'
   echo
