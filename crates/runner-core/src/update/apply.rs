@@ -171,10 +171,10 @@ impl Restarter for ProcessRestarter {
         let child_id = child.id();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         loop {
-            if let Ok(state) = crate::state::RunnerState::read(&self.state_dir) {
-                if state.pid == child_id {
-                    std::process::exit(0);
-                }
+            if crate::state::RunnerState::read(&self.state_dir)
+                .is_ok_and(|state| state.pid == child_id)
+            {
+                std::process::exit(0);
             }
             if let Ok(Some(status)) = child.try_wait() {
                 return Err(ApplyError::Restart(format!(
