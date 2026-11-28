@@ -1064,7 +1064,7 @@ mod tests {
             &config,
             format!(
                 "server_url = \"wss://intentra.example/api/runner\"\ntoken_path = \"{}\"\n",
-                token.display()
+                token.display().to_string().replace('\\', "\\\\")
             ),
         )
         .unwrap();
