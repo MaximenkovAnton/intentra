@@ -38,7 +38,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -90,7 +90,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -104,7 +104,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -158,7 +158,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -216,7 +216,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -285,7 +285,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -345,7 +345,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -359,7 +359,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -373,7 +373,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -436,7 +436,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -450,7 +450,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -486,7 +486,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -500,7 +500,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -561,7 +561,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -575,7 +575,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -589,7 +589,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -647,7 +647,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -661,7 +661,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -717,7 +717,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -731,7 +731,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -745,7 +745,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -759,7 +759,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -810,7 +810,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -824,7 +824,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -879,6 +879,19 @@ export interface paths {
                                 lastSeenAt: string | null;
                                 /** Format: date-time */
                                 revokedAt: string | null;
+                                pinnedVersion: string | null;
+                                autoUpdate: boolean;
+                                latestVersion: string | null;
+                                updateAvailable: boolean;
+                                lastUpdate: {
+                                    fromVersion: string;
+                                    toVersion: string;
+                                    /** @enum {string} */
+                                    status: "applied" | "rolled_back" | "failed";
+                                    reason: string | null;
+                                    /** Format: date-time */
+                                    createdAt: string;
+                                } | null;
                             }[];
                             nextCursor: string | null;
                         };
@@ -892,7 +905,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -950,7 +963,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -964,7 +977,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1030,7 +1043,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1044,7 +1057,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1097,7 +1110,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1111,7 +1124,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1161,7 +1174,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1175,7 +1188,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1183,6 +1196,548 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a signed runner release; a repeat publish updates the same version */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        manifest: string;
+                        signature: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Release republished */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            version: string;
+                            /** @enum {string} */
+                            channel: "stable" | "beta";
+                            protocolVersion: number;
+                            /** Format: date-time */
+                            publishedAt: string;
+                            yanked: boolean;
+                            manifest: string;
+                            signature: string;
+                            notes: string;
+                        };
+                    };
+                };
+                /** @description Release published */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            version: string;
+                            /** @enum {string} */
+                            channel: "stable" | "beta";
+                            protocolVersion: number;
+                            /** Format: date-time */
+                            publishedAt: string;
+                            yanked: boolean;
+                            manifest: string;
+                            signature: string;
+                            notes: string;
+                        };
+                    };
+                };
+                /** @description The manifest, its signature or its size is invalid */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Wrong publish token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Release publishing or the release key is not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/releases/{version}/yank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Yank or un-yank a release */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    version: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        yanked: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Release yanked or restored */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Wrong publish token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Unknown release */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Release publishing or the release key is not configured */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runners/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve the update for the authenticated runner */
+        get: {
+            parameters: {
+                query?: {
+                    current?: string;
+                    channel?: "stable" | "beta";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Update decision */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            available: boolean;
+                            /** @enum {string} */
+                            channel: "stable" | "beta";
+                            latestVersion: string | null;
+                            pinnedVersion: string | null;
+                            autoUpdate: boolean;
+                            manifest?: string;
+                            signature?: string;
+                            reason?: string;
+                        };
+                    };
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Unknown or revoked runner token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runners/update/artifact/{fileName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream a release artifact verified against the signed manifest */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    fileName: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Artifact bytes with Content-Length and a sha-256 Digest */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/octet-stream": string;
+                    };
+                };
+                /** @description Unknown or revoked runner token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Unknown or yanked artifact */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description The artifact source failed, timed out or returned other bytes */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runners/update/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record an applied, rolled-back or failed runner update */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        fromVersion: string;
+                        toVersion: string;
+                        /** @enum {string} */
+                        status: "applied" | "rolled_back" | "failed";
+                        reason?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Update report recorded */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Unknown or revoked runner token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runners/{id}/update-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Pin a runner version or disable auto-update */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        pinnedVersion: string | null;
+                        autoUpdate: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Update policy changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+                /** @description Runner is revoked */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1244,7 +1799,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1258,7 +1813,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1318,7 +1873,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1332,7 +1887,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1346,7 +1901,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1457,7 +2012,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1471,7 +2026,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1541,7 +2096,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1555,7 +2110,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1569,7 +2124,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1583,7 +2138,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1698,7 +2253,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1712,7 +2267,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1726,7 +2281,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1740,7 +2295,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1754,7 +2309,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1821,7 +2376,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1835,7 +2390,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1849,7 +2404,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1927,7 +2482,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1941,7 +2496,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1955,7 +2510,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -1969,7 +2524,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2036,7 +2591,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2050,7 +2605,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2064,7 +2619,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2245,7 +2800,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2259,7 +2814,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2335,7 +2890,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2349,7 +2904,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2412,7 +2967,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2426,7 +2981,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2510,7 +3065,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2524,7 +3079,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2701,7 +3256,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2715,7 +3270,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2766,7 +3321,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2855,7 +3410,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2869,7 +3424,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2936,7 +3491,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2950,7 +3505,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -2964,7 +3519,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -3030,7 +3585,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -3044,7 +3599,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -3058,7 +3613,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -3138,7 +3693,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             /** @enum {string} */
-                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+                            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
                             message: string;
                             details?: unknown;
                         };
@@ -3266,6 +3821,19 @@ export interface components {
             lastSeenAt: string | null;
             /** Format: date-time */
             revokedAt: string | null;
+            pinnedVersion: string | null;
+            autoUpdate: boolean;
+            latestVersion: string | null;
+            updateAvailable: boolean;
+            lastUpdate: {
+                fromVersion: string;
+                toVersion: string;
+                /** @enum {string} */
+                status: "applied" | "rolled_back" | "failed";
+                reason: string | null;
+                /** Format: date-time */
+                createdAt: string;
+            } | null;
         };
         RunnerList: {
             items: {
@@ -3284,6 +3852,19 @@ export interface components {
                 lastSeenAt: string | null;
                 /** Format: date-time */
                 revokedAt: string | null;
+                pinnedVersion: string | null;
+                autoUpdate: boolean;
+                latestVersion: string | null;
+                updateAvailable: boolean;
+                lastUpdate: {
+                    fromVersion: string;
+                    toVersion: string;
+                    /** @enum {string} */
+                    status: "applied" | "rolled_back" | "failed";
+                    reason: string | null;
+                    /** Format: date-time */
+                    createdAt: string;
+                } | null;
             }[];
             nextCursor: string | null;
         };
@@ -3353,7 +3934,7 @@ export interface components {
         };
         ApiError: {
             /** @enum {string} */
-            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "INTERNAL";
+            code: "AUTH_REQUIRED" | "FORBIDDEN" | "VALIDATION" | "CONFLICT" | "NOT_FOUND" | "LIMIT" | "RUNNER_OFFLINE" | "ESCALATION_EXPIRED" | "UPSTREAM_FAILED" | "RELEASE_DISABLED" | "INTERNAL";
             message: string;
             details?: unknown;
         };
@@ -3945,6 +4526,85 @@ export interface components {
                 symbol?: string;
                 blobSha?: string;
             }[];
+        };
+        UpdateAsset: {
+            /** @enum {string} */
+            target: "x86_64-unknown-linux-gnu" | "aarch64-unknown-linux-gnu" | "x86_64-apple-darwin" | "aarch64-apple-darwin" | "x86_64-pc-windows-msvc";
+            fileName: string;
+            /** Format: uri */
+            url: string;
+            sizeBytes: number;
+            sha256: string;
+        };
+        UpdateManifest: {
+            /** @enum {number} */
+            schemaVersion: 1;
+            version: string;
+            /** @enum {string} */
+            channel: "stable" | "beta";
+            protocolVersion: number;
+            /** Format: date-time */
+            publishedAt: string;
+            notes: string;
+            assets: {
+                /** @enum {string} */
+                target: "x86_64-unknown-linux-gnu" | "aarch64-unknown-linux-gnu" | "x86_64-apple-darwin" | "aarch64-apple-darwin" | "x86_64-pc-windows-msvc";
+                fileName: string;
+                /** Format: uri */
+                url: string;
+                sizeBytes: number;
+                sha256: string;
+            }[];
+        };
+        ReleasePublishInput: {
+            manifest: string;
+            signature: string;
+        };
+        RunnerUpdate: {
+            available: boolean;
+            /** @enum {string} */
+            channel: "stable" | "beta";
+            latestVersion: string | null;
+            pinnedVersion: string | null;
+            autoUpdate: boolean;
+            manifest?: string;
+            signature?: string;
+            reason?: string;
+        };
+        UpdatePolicyInput: {
+            pinnedVersion: string | null;
+            autoUpdate: boolean;
+        };
+        UpdateReportInput: {
+            fromVersion: string;
+            toVersion: string;
+            /** @enum {string} */
+            status: "applied" | "rolled_back" | "failed";
+            reason?: string;
+        };
+        Release: {
+            version: string;
+            /** @enum {string} */
+            channel: "stable" | "beta";
+            protocolVersion: number;
+            /** Format: date-time */
+            publishedAt: string;
+            yanked: boolean;
+            manifest: string;
+            signature: string;
+            notes: string;
+        };
+        ReleaseYankInput: {
+            yanked: boolean;
+        };
+        RunnerLastUpdate: {
+            fromVersion: string;
+            toVersion: string;
+            /** @enum {string} */
+            status: "applied" | "rolled_back" | "failed";
+            reason: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
     };
     responses: never;

@@ -22,12 +22,14 @@
     "openid-client": "6.9.1",
     "pg": "8.23.1",
     "pino": "10.4.0",
+    "semver": "7.8.6",
     "ws": "8.18.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.19.4",
     "@types/pg": "8.23.1",
+    "@types/semver": "7.8.0",
     "@types/ws": "8.18.1",
     "drizzle-kit": "0.31.11",
     "jose": "6.2.18",

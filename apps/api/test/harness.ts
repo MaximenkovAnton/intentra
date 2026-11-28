@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Pool, PoolClient } from 'pg';
@@ -12,6 +15,13 @@ import { createOidcService, type OidcService } from '../src/auth/oidc.js';
 import { createSession, SESSION_COOKIE } from '../src/auth/session.js';
 import { provisionUser } from '../src/auth/provisioning.js';
 import { projectMembers, projects, users, type ProjectRow, type UserRow } from '../src/db/schema.js';
+import { createReleaseService } from '../src/services/releases.js';
+import {
+  createReleaseArtifacts,
+  type ArtifactSource,
+  type ReleaseArtifacts,
+} from '../src/services/release-artifacts.js';
+import { FakeArtifactSource, TEST_PUBLIC_KEY } from './release-helpers.js';
 
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 export const hasDatabase = TEST_DATABASE_URL !== undefined && TEST_DATABASE_URL.length > 0;
@@ -38,11 +48,19 @@ export interface Harness {
   readonly oidc: OidcService | null;
   readonly events: EventBus;
   readonly memory: MemoryApi;
+  readonly releases: ReturnType<typeof createReleaseService>;
+  readonly releaseArtifacts: ReleaseArtifacts;
+  readonly releaseCacheDir: string;
   close(): Promise<void>;
 }
 
 export interface HarnessOptions {
   readonly memory?: MemoryApi;
+  readonly releasePublicKey?: string;
+  readonly releaseArtifactSource?: ArtifactSource;
+  readonly releaseCacheDir?: string;
+  readonly releaseFetchTimeoutMs?: number;
+  readonly queryLog?: (query: string) => void;
 }
 
 export async function createHarness(
@@ -51,6 +69,11 @@ export async function createHarness(
 ): Promise<Harness> {
   const config = loadConfig(baseEnv(overrides));
   const { db, pool } = createDatabase(config.databaseUrl);
+  const queryLog = options.queryLog;
+  if (queryLog !== undefined) {
+    const session = db._.session as unknown as { logger: { logQuery: (query: string) => void } };
+    session.logger = { logQuery: (query) => queryLog(query) };
+  }
   const oidc = config.oidc ? await createOidcService(config.oidc, config.publicUrl) : null;
   const events = new EventBus();
   const owned = options.memory === undefined ? createMemory({ config, db, logger: createLogger('silent'), now: () => new Date() }) : null;
@@ -58,6 +81,20 @@ export async function createHarness(
   if (options.memory !== undefined) memory = options.memory;
   else if (owned !== null) memory = owned;
   else throw new Error('memory services are required');
+  const now = (): Date => new Date();
+  const releaseCacheDir = options.releaseCacheDir ?? (await mkdtemp(join(tmpdir(), 'intentra-releases-')));
+  const releases = createReleaseService({
+    db,
+    now,
+    publicKeyBase64: options.releasePublicKey ?? TEST_PUBLIC_KEY,
+    maxArtifactBytes: config.release.maxArtifactBytes,
+  });
+  const releaseArtifacts = createReleaseArtifacts({
+    cacheDir: releaseCacheDir,
+    maxBytes: config.release.maxArtifactBytes,
+    timeoutMs: options.releaseFetchTimeoutMs ?? 30_000,
+    source: options.releaseArtifactSource ?? new FakeArtifactSource(),
+  });
   const app = await buildApp({
     config,
     db,
@@ -66,7 +103,9 @@ export async function createHarness(
     oidc,
     events,
     memory,
-    now: () => new Date(),
+    releases,
+    releaseArtifacts,
+    now,
   });
   return {
     app,
@@ -76,10 +115,14 @@ export async function createHarness(
     oidc,
     events,
     memory,
+    releases,
+    releaseArtifacts,
+    releaseCacheDir,
     async close() {
       await app.close();
       if (owned !== null) await owned.stop();
       await pool.end();
+      if (options.releaseCacheDir === undefined) await rm(releaseCacheDir, { recursive: true, force: true });
     },
   };
 }

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { useApiErrorMessage } from "../api/errorMessages"
 import { useMe, useRevokeRunner, useRotateRunnerToken, useRunners } from "../api/queries"
 import { manageRunner } from "../auth/permissions"
+import { RunnerUpdateCell } from "../components/RunnerUpdateCell"
 import { StatusBadge } from "../components/StatusBadge"
 import { formatDateTime } from "../i18n/format"
 import { runnerTone } from "../ui/status"
@@ -46,6 +47,7 @@ export const RunnersPage = () => {
                   <th scope="col">{t("runners.name")}</th>
                   <th scope="col">{t("runners.platform")}</th>
                   <th scope="col">{t("runners.version")}</th>
+                  <th scope="col">{t("runners.updates.title")}</th>
                   <th scope="col">{t("runners.capabilities")}</th>
                   <th scope="col">{t("runners.status")}</th>
                   <th scope="col">{t("runners.lastSeen")}</th>
@@ -65,7 +67,15 @@ export const RunnersPage = () => {
                       <td>
                         {runner.os} / {runner.arch}
                       </td>
-                      <td>{runner.version}</td>
+                      <td>
+                        <span>{runner.version}</span>
+                        {runner.updateAvailable && runner.latestVersion !== null ? (
+                          <span className="muted"> → {runner.latestVersion}</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        <RunnerUpdateCell runner={runner} canManage={canManage} />
+                      </td>
                       <td>
                         {runner.capabilities.length === 0 ? (
                           <span className="muted">{t("common.notAvailable")}</span>

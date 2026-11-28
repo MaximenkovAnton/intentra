@@ -25,6 +25,8 @@ it('keeps roles and error codes closed', () => {
     | 'LIMIT'
     | 'RUNNER_OFFLINE'
     | 'ESCALATION_EXPIRED'
+    | 'UPSTREAM_FAILED'
+    | 'RELEASE_DISABLED'
     | 'INTERNAL'
   >();
 });

@@ -11,6 +11,7 @@ pub mod register;
 pub mod state;
 pub mod token;
 pub mod transport;
+pub mod update;
 pub mod util;
 pub mod verify;
 

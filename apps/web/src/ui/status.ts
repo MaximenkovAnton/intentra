@@ -1,4 +1,4 @@
-import type { Finding, GateStatus, Job, Stage } from "../api/types"
+import type { Finding, GateStatus, Job, Runner, Stage } from "../api/types"
 
 export type Tone = "neutral" | "success" | "danger" | "warning"
 
@@ -71,6 +71,36 @@ export const runnerTone = (status: string): Tone => {
       return "danger"
     default:
       return "neutral"
+  }
+}
+
+export type RunnerUpdateStatus = "actual" | "available" | "updated" | "rolled_back" | "failed"
+
+export const runnerUpdateStatus = (
+  runner: Pick<Runner, "updateAvailable" | "lastUpdate">,
+): RunnerUpdateStatus => {
+  switch (runner.lastUpdate?.status) {
+    case "applied":
+      return "updated"
+    case "rolled_back":
+      return "rolled_back"
+    case "failed":
+      return "failed"
+    default:
+      return runner.updateAvailable ? "available" : "actual"
+  }
+}
+
+export const runnerUpdateTone = (status: RunnerUpdateStatus): Tone => {
+  switch (status) {
+    case "actual":
+    case "updated":
+      return "success"
+    case "available":
+    case "rolled_back":
+      return "warning"
+    case "failed":
+      return "danger"
   }
 }
 

@@ -12,9 +12,10 @@ Repository guide for coding agents working on Intentra. Read
 - `packages/contracts` — Zod REST schemas, OpenAPI 3.1 generation, WS runner protocol and adapter
   types; consumed by api and web.
 - `crates/runner-core` — Rust runner protocol structs shared with the centre; `crates/runner` —
-  the `intentra-runner` CLI binary (stubs in this scaffold).
+  the `intentra-runner` CLI binary: `register`/`start`/`status`/`doctor`/`mcp`/`update`.
 - `infra/compose` — Dockerfiles, nginx config, `docker-compose.yml`, `.env.example`.
-- `fixtures/runner` — JSON fixtures checked by the Rust contract tests.
+- `fixtures/runner` — JSON fixtures checked by the Rust contract tests; `fixtures/release` — the
+  shared update-manifest fixture and the test signing key (test only, never a release key).
 - `docs/` — architecture and development docs.
 
 Board/task automation state lives in `.agile/`, which is gitignored and not part of the
@@ -36,6 +37,11 @@ cargo test
 
 Other commands (dev servers, database migrations, OpenAPI, Playwright, Docker Compose) are
 documented in `docs/development/commands.md`; use those names instead of inventing new ones.
+Releases are cut by `.github/workflows/release.yml` from a `vX.Y.Z` tag and proven by
+`pnpm -w test:release`; the runner updates itself through the centre. Read
+[`docs/operations/releases.md`](docs/operations/releases.md) and
+[`docs/operations/updates.md`](docs/operations/updates.md) before touching either path, and keep
+`docs/capabilities/index.md` in the same diff when observable behaviour changes.
 
 ## Conventions — TypeScript
 
@@ -65,7 +71,9 @@ documented in `docs/development/commands.md`; use those names instead of inventi
 
 - Edition 2024 workspace (`crates/`); `cargo fmt --check` and `cargo clippy -- -D warnings` are
   gates. Keep dependencies minimal, and keep `fixtures/runner` in sync with the serialized
-  protocol structs.
+  protocol structs and `fixtures/release/manifest.json` in sync with `UpdateManifest`. The
+  release public key in `crates/runner-core/keys/release.pub` is committed; the signing seed is
+  only ever a CI secret.
 
 ## Conventions — infrastructure
 

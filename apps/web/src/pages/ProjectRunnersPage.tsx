@@ -10,6 +10,7 @@ import {
   useRunners,
 } from "../api/queries"
 import { canManage, manageRunner } from "../auth/permissions"
+import { RunnerUpdateCell } from "../components/RunnerUpdateCell"
 import { StatusBadge } from "../components/StatusBadge"
 import { formatDateTime } from "../i18n/format"
 import { runnerTone } from "../ui/status"
@@ -81,6 +82,7 @@ export const ProjectRunnersPage = ({ projectKey }: { projectKey: string }) => {
                   <th scope="col">{t("runners.name")}</th>
                   <th scope="col">{t("runners.platform")}</th>
                   <th scope="col">{t("runners.version")}</th>
+                  <th scope="col">{t("runners.updates.title")}</th>
                   <th scope="col">{t("runners.capabilities")}</th>
                   <th scope="col">{t("runners.status")}</th>
                   <th scope="col">{t("runners.lastSeen")}</th>
@@ -98,7 +100,15 @@ export const ProjectRunnersPage = ({ projectKey }: { projectKey: string }) => {
                       <td>
                         {runner.os} / {runner.arch}
                       </td>
-                      <td>{runner.version}</td>
+                      <td>
+                        <span>{runner.version}</span>
+                        {runner.updateAvailable && runner.latestVersion !== null ? (
+                          <span className="muted"> → {runner.latestVersion}</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        <RunnerUpdateCell runner={runner} canManage={canManageRunner} />
+                      </td>
                       <td>
                         {runner.capabilities.length === 0 ? (
                           <span className="muted">{t("common.notAvailable")}</span>

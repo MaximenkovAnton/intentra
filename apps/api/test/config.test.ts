@@ -95,6 +95,33 @@ describe('configuration', () => {
     expect(() => loadConfig({ DATABASE_URL: '', PORT: 'not-a-port' })).toThrow(ConfigError);
   });
 
+  it('reads release configuration with defaults and treats an empty publish token as unset', () => {
+    const defaults = loadConfig({ ...base, NODE_ENV: 'test' });
+    expect(defaults.release).toEqual({
+      publishToken: null,
+      cacheDir: '/data/releases',
+      maxArtifactBytes: 268_435_456,
+      githubToken: null,
+    });
+
+    const overridden = loadConfig({
+      ...base,
+      NODE_ENV: 'test',
+      RELEASE_CACHE_DIR: '/tmp/releases',
+      RELEASE_MAX_ARTIFACT_BYTES: '1024',
+      RELEASE_PUBLISH_TOKEN: 'test-publish-token',
+      GITHUB_RELEASE_TOKEN: 'gh-token',
+    });
+    expect(overridden.release).toEqual({
+      publishToken: 'test-publish-token',
+      cacheDir: '/tmp/releases',
+      maxArtifactBytes: 1024,
+      githubToken: 'gh-token',
+    });
+
+    expect(loadConfig({ ...base, NODE_ENV: 'test', RELEASE_PUBLISH_TOKEN: '' }).release.publishToken).toBeNull();
+  });
+
   it('treats empty optional values from compose interpolation as unset', () => {
     const config = loadConfig({
       ...base,

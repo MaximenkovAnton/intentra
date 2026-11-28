@@ -715,6 +715,38 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
+.update-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 16rem;
+}
+
+.update-policy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.update-policy__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.update-policy__pin {
+  flex: 1 1 8rem;
+  min-inline-size: 8rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
 .spec-body {
   max-inline-size: 100%;
   margin: 0;

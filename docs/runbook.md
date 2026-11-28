@@ -149,6 +149,11 @@ token_path = "~/.intentra/token"
 allow_roots = ["/path/to/projects"]
 max_concurrent_jobs = 1
 
+[update]
+enabled = true
+channel = "stable"
+check_interval_min = 360
+
 [workspaces]
 intentra = "/path/to/intentra"
 
@@ -181,6 +186,23 @@ with that message instead of reporting an empty success. Register with a one-tim
 WebSocket and the runner shows **online** in the UI. The centre receives only
 metadata (paths, symbol names, blob hashes, statuses, findings, diff summaries)
 — never file contents, diffs, logs or keys.
+
+The binary updates itself from the centre by default: after the first `hello` it checks the
+releases the centre offers, verifies the Ed25519 manifest signature and the archive SHA-256, and
+replaces itself only when no job is active, keeping `intentra-runner.prev` as the backup. A new
+binary that fails its self-check or does not confirm is restored from that backup. Check the
+current state at any time; `--apply` installs immediately but refuses while the daemon runs:
+
+```bash
+./target/release/intentra-runner update
+./target/release/intentra-runner update --apply   # daemon stopped
+```
+
+`[update] enabled = false` turns the automatic checks off (air-gapped hosts); `channel = "beta"`
+subscribes to prereleases; an admin can pin a version in the Runners screen. Releases are cut from
+a tag by the release workflow — see [`operations/releases.md`](operations/releases.md) — and the
+full update behaviour, rollback and offline path are in
+[`operations/updates.md`](operations/updates.md).
 
 ## 6. Self-dogfood
 

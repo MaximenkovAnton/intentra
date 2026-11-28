@@ -44,10 +44,10 @@ sign-in goes through Pocket ID. The runner is the `intentra-runner` binary built
 | web | `apps/web` | React 19 SPA: projects, intents, spec/critic/plan/build/evidence, runners, memory; RU/EN, SSE, light/dark theme |
 | api | `apps/api` | Fastify 5 control plane: OIDC sessions + RBAC, projects/members, intents + front office, specs + AC/DoD + mechanical critic, planner, orchestrator (jobs/leases/verify/accept), memory (FalkorDB + Qdrant + Ollama), SSE, runner hub |
 | contracts | `packages/contracts` | Zod REST schemas, OpenAPI 3.1, WS runner protocol, adapter types |
-| runner | `crates/runner` | `intentra-runner` CLI: register/start/status/doctor/mcp, WSS transport, worktree/git, tree-sitter index, verify/claims/diff, DSH + generic CLI + mock adapters |
+| runner | `crates/runner` | `intentra-runner` CLI: register/start/status/doctor/mcp/update, WSS transport, worktree/git, tree-sitter index, verify/claims/diff, DSH + generic CLI + mock adapters |
 | runner-core | `crates/runner-core` | Shared protocol, config, job/adapter types, git and index primitives |
 | infrastructure | `infra/` | portable compose stacks: control plane (api/web/ingress/migrate), memory (FalkorDB/Qdrant/Ollama), Pocket ID; nginx |
-| docs | `docs/` | architecture, development commands and adapters, operations (memory, IdP), runbook |
+| docs | `docs/` | architecture and ADRs, development commands and adapters, operations (memory, IdP, releases, updates, deploy), capabilities map, runbook |
 
 Postgres, FalkorDB/Qdrant/Ollama and Pocket ID run on their own hosts and are reached by URL.
 Host provisioning (LXC/VM/Proxmox, addressing, storage, backups) is environment-specific and
@@ -63,7 +63,10 @@ findings, metadata and a content-free diff summary — see
 - [`docs/development/web-ui.md`](docs/development/web-ui.md) — UI screens, i18n, theme, tests.
 - [`docs/operations/memory.md`](docs/operations/memory.md) — memory stack and degradation.
 - [`docs/operations/idp.md`](docs/operations/idp.md) — Pocket ID deployment and OIDC setup.
+- [`docs/operations/releases.md`](docs/operations/releases.md) — cutting a signed runner release.
+- [`docs/operations/updates.md`](docs/operations/updates.md) — runner self-update, channels and rollback.
 - [`docs/runbook.md`](docs/runbook.md) — deploy, verify, self-dogfood, restore.
+- [`docs/capabilities/index.md`](docs/capabilities/index.md) — capabilities with entry points and tests.
 
 `AGENTS.md` holds the coding conventions (ESM/NodeNext, strict TypeScript, Zod at boundaries,
 CSS tokens, i18n, Rust gates).

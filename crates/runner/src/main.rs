@@ -5,6 +5,14 @@ use intentra_runner_core::daemon::{McpServer, Registry};
 use intentra_runner_core::job::{ExecutorConfig, JobManager};
 use intentra_runner_core::state::RunnerState;
 use intentra_runner_core::transport::{self, ClientConfig};
+use intentra_runner_core::update::apply::{
+    ApplyRequest, ProcessRestarter, ReconcileRequest, SelfReplaceInstaller, apply_release,
+    reconcile_pending, report_outcome,
+};
+use intentra_runner_core::update::client::UpdateClient;
+use intentra_runner_core::update::daemon::{self as update_daemon, UpdateDaemon};
+use intentra_runner_core::update::sanitize_for_log;
+use intentra_runner_core::update::state::UpdateState;
 use intentra_runner_core::{
     EXIT_AUTH, EXIT_CONFIG, EXIT_FAILURE, EXIT_NOT_RUNNING, EXIT_OK, config, mcp, register, token,
     util,
@@ -63,6 +71,14 @@ enum Commands {
         #[arg(long)]
         socket: String,
     },
+    /// Check the center for a newer runner release, or install it.
+    Update {
+        /// Install the release instead of only reporting it.
+        #[arg(long)]
+        apply: bool,
+        #[arg(long)]
+        config: Option<PathBuf>,
+    },
 }
 
 fn default_config_path() -> PathBuf {
@@ -71,10 +87,10 @@ fn default_config_path() -> PathBuf {
         .unwrap_or_else(|| util::expand_tilde("~/.intentra/config.toml"))
 }
 
-fn load_config(flag: Option<PathBuf>) -> Result<config::Config, i32> {
+fn load_config(flag: Option<PathBuf>) -> Result<(config::Config, PathBuf), i32> {
     let path = flag.unwrap_or_else(default_config_path);
     match config::Config::load(&path) {
-        Ok(config) => Ok(config),
+        Ok(config) => Ok((config, path)),
         Err(error) => {
             eprintln!("config: {error}");
             Err(EXIT_CONFIG)
@@ -153,8 +169,8 @@ async fn command_register(
 }
 
 async fn command_start(config_flag: Option<PathBuf>) -> i32 {
-    let config = match load_config(config_flag) {
-        Ok(config) => config,
+    let (config, config_path) = match load_config(config_flag) {
+        Ok(loaded) => loaded,
         Err(code) => return code,
     };
     init_tracing(&config.log_level);
@@ -166,6 +182,29 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
             return EXIT_AUTH;
         }
     };
+    let state_dir = config.state_dir();
+    let version = intentra_runner_core::version();
+    let installer = SelfReplaceInstaller;
+    let restarter = ProcessRestarter::new(state_dir.clone());
+    let update_client = UpdateClient::new(
+        &config.server_url,
+        &stored.token,
+        config.update.allow_insecure_http,
+    );
+    if let Err(error) = &update_client {
+        tracing::warn!(error = %error, "cannot build the update client");
+    }
+    let update_client = update_client.ok();
+    reconcile_pending(&ReconcileRequest {
+        state_dir: &state_dir,
+        current_version: version,
+        config_path: &config_path,
+        token_path: &token_path,
+        installer: &installer,
+        restarter: &restarter,
+        client: update_client.as_ref(),
+    })
+    .await;
     let registry = Registry::new();
     let mcp_server = match McpServer::bind(std::sync::Arc::clone(&registry)).await {
         Ok(server) => std::sync::Arc::new(server),
@@ -176,7 +215,7 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
     };
     let mcp_endpoint = mcp_server.endpoint();
     let state = RunnerState::new(&config.server_url, &mcp_endpoint);
-    if let Err(error) = state.write(&config.state_dir()) {
+    if let Err(error) = state.write(&state_dir) {
         eprintln!("state file: {error}");
         return EXIT_FAILURE;
     }
@@ -204,7 +243,7 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
     );
     let mut client = ClientConfig::new(
         config.server_url.clone(),
-        stored.token,
+        stored.token.clone(),
         config
             .workspaces
             .values()
@@ -216,13 +255,35 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
     client.runner_id = stored.runner_id;
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
     spawn_shutdown(shutdown_tx);
+    let pending_update = UpdateState::load(&state_dir)
+        .ok()
+        .flatten()
+        .and_then(|state| state.pending)
+        .is_some();
+    if (config.update.enabled || pending_update)
+        && let Some(update_client) = update_client
+    {
+        let (hello_tx, hello_rx) = watch::channel(false);
+        client.hello = Some(hello_tx);
+        let daemon = std::sync::Arc::new(UpdateDaemon {
+            client: update_client,
+            update: config.update.clone(),
+            current_version: version.to_string(),
+            state_dir: state_dir.clone(),
+            jobs: std::sync::Arc::clone(&jobs),
+            installer: std::sync::Arc::new(SelfReplaceInstaller),
+            restarter: std::sync::Arc::new(ProcessRestarter::new(state_dir.clone())),
+            waiting_for_hello: None,
+        });
+        tokio::spawn(update_daemon::run(daemon, hello_rx, shutdown_rx.clone()));
+    }
     tracing::info!(
         server = %config.server_url,
         mcp = %mcp_endpoint,
         "intentra runner started"
     );
     let result = transport::run(client, jobs, shutdown_rx).await;
-    RunnerState::remove(&config.state_dir());
+    RunnerState::remove(&state_dir);
     match result {
         Ok(()) => EXIT_OK,
         Err(error) => {
@@ -233,8 +294,8 @@ async fn command_start(config_flag: Option<PathBuf>) -> i32 {
 }
 
 fn command_status(config_flag: Option<PathBuf>) -> i32 {
-    let config = match load_config(config_flag) {
-        Ok(config) => config,
+    let (config, _config_path) = match load_config(config_flag) {
+        Ok(loaded) => loaded,
         Err(code) => return code,
     };
     let state_dir = config.state_dir();
@@ -278,8 +339,8 @@ fn command_status(config_flag: Option<PathBuf>) -> i32 {
 }
 
 fn command_doctor(config_flag: Option<PathBuf>) -> i32 {
-    let config = match load_config(config_flag) {
-        Ok(config) => config,
+    let (config, _config_path) = match load_config(config_flag) {
+        Ok(loaded) => loaded,
         Err(code) => return code,
     };
     let mut failures = 0;
@@ -361,6 +422,99 @@ fn command_doctor(config_flag: Option<PathBuf>) -> i32 {
     if failures == 0 { EXIT_OK } else { EXIT_FAILURE }
 }
 
+async fn command_update(apply: bool, config_flag: Option<PathBuf>) -> i32 {
+    let (config, _config_path) = match load_config(config_flag) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let token_path = config.token_path();
+    let stored = match token::load(&token_path) {
+        Ok(stored) => stored,
+        Err(error) => {
+            eprintln!("token: {error}; run `intentra-runner register` first");
+            return EXIT_AUTH;
+        }
+    };
+    let state_dir = config.state_dir();
+    if apply && RunnerState::read(&state_dir).is_ok() {
+        eprintln!("update: daemon is running; stop it before applying an update");
+        return EXIT_FAILURE;
+    }
+    let version = intentra_runner_core::version();
+    let client = match UpdateClient::new(
+        &config.server_url,
+        stored.token,
+        config.update.allow_insecure_http,
+    ) {
+        Ok(client) => client,
+        Err(error) => {
+            eprintln!("update: {error}");
+            return EXIT_FAILURE;
+        }
+    };
+    let update = match client.update(version, config.update.channel).await {
+        Ok(update) => update,
+        Err(error) => {
+            eprintln!("update: {error}");
+            return EXIT_FAILURE;
+        }
+    };
+    if !apply {
+        println!(
+            "{}",
+            serde_json::json!({
+                "current": version,
+                "latest": update.latest_version,
+                "channel": config.update.channel.as_str(),
+                "available": update.available,
+                "pinnedVersion": update.pinned_version,
+                "autoUpdate": update.auto_update,
+                "reason": update.reason,
+            })
+        );
+        return EXIT_OK;
+    }
+    if !update.available {
+        println!(
+            "{}",
+            serde_json::json!({"current": version, "available": false})
+        );
+        return EXIT_OK;
+    }
+    if let Some(reason) = update.apply_blocker() {
+        eprintln!("update: {reason}");
+        return EXIT_FAILURE;
+    }
+    let installer = SelfReplaceInstaller;
+    let request = ApplyRequest {
+        client: &client,
+        update: &config.update,
+        current_version: version,
+        state_dir: &state_dir,
+        installer: &installer,
+        restarter: None,
+    };
+    let outcome = apply_release(&request, &update).await;
+    report_outcome(Some(&client), outcome.report()).await;
+    match outcome {
+        intentra_runner_core::update::apply::ApplyOutcome::Applied { version } => {
+            println!(
+                "{}",
+                serde_json::json!({"applied": version, "restart": "run `intentra-runner start` to load it"})
+            );
+            EXIT_OK
+        }
+        outcome => {
+            let reason = outcome
+                .report()
+                .and_then(|report| report.reason.clone())
+                .unwrap_or_else(|| "the update failed".to_string());
+            eprintln!("update: {}", sanitize_for_log(&reason));
+            EXIT_FAILURE
+        }
+    }
+}
+
 async fn command_mcp(job: String, socket: String) -> i32 {
     if !util::validate_job_id(&job) {
         eprintln!("mcp: invalid job id");
@@ -409,6 +563,7 @@ async fn main() -> std::process::ExitCode {
         Commands::Status { config } => command_status(config),
         Commands::Doctor { config } => command_doctor(config),
         Commands::Mcp { job, socket } => command_mcp(job, socket).await,
+        Commands::Update { apply, config } => command_update(apply, config).await,
     };
     std::process::ExitCode::from(code as u8)
 }
